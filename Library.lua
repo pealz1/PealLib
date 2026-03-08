@@ -353,16 +353,6 @@ function Library:RemoveFromRegistry(Instance)
 end;
 
 function Library:UpdateColorsUsingRegistry()
-	-- TODO: Could have an 'active' list of objects
-	-- where the active list only contains Visible objects.
-
-	-- IMPL: Could setup .Changed events on the AddToRegistry function
-	-- that listens for the 'Visible' propert being changed.
-	-- Visible: true => Add to active list, and call UpdateColors function
-	-- Visible: false => Remove from active list.
-
-	-- The above would be especially efficient for a rainbow menu color or live color-changing.
-
 	for Idx, Object in next, Library.Registry do
 		for Property, ColorIdx in next, Object.Properties do
 			if type(ColorIdx) == 'string' then
@@ -375,18 +365,15 @@ function Library:UpdateColorsUsingRegistry()
 end;
 
 function Library:GiveSignal(Signal)
-	-- Only used for signals not attached to library instances, as those should be cleaned up on object destruction by Roblox
 	table.insert(Library.Signals, Signal)
 end
 
 function Library:Unload()
-	-- Unload all of the signals
 	for Idx = #Library.Signals, 1, -1 do
 		local Connection = table.remove(Library.Signals, Idx)
 		Connection:Disconnect()
 	end
 
-	 -- Call our unload callback, maybe to undo some hooks etc
 	if Library.OnUnload then
 		Library.OnUnload()
 	end
@@ -411,7 +398,6 @@ do
 
 	function Funcs:AddColorPicker(Idx, Info)
 		local ToggleLabel = self.TextLabel;
-		-- local Container = self.Container;
 
 		assert(Info.Default, 'AddColorPicker: Missing default value.');
 
@@ -442,7 +428,6 @@ do
 			Parent = ToggleLabel;
 		});
 
-		-- Transparency image taken from https://github.com/matas3535/SplixPrivateDrawingLibrary/blob/main/Library.lua cus i'm lazy
 		local CheckerFrame = Library:Create('ImageLabel', {
 			BorderSizePixel = 0;
 			Size = UDim2.new(0, 27, 0, 13);
@@ -451,11 +436,6 @@ do
 			Visible = not not Info.Transparency;
 			Parent = DisplayFrame;
 		});
-
-		-- 1/16/23
-		-- Rewrote this to be placed inside the Library ScreenGui
-		-- There was some issue which caused RelativeOffset to be way off
-		-- Thus the color picker would never show
 
 		local PickerFrameOuter = Library:Create('Frame', {
 			Name = 'Color';
@@ -659,7 +639,7 @@ do
 			Position = UDim2.fromOffset(5, 5);
 			TextXAlignment = Enum.TextXAlignment.Left;
 			TextSize = 14;
-			Text = ColorPicker.Title,--Info.Default;
+			Text = ColorPicker.Title,
 			TextWrapped = false;
 			ZIndex = 16;
 			Parent = PickerFrameInner;
@@ -1012,7 +992,7 @@ do
 		local KeyPicker = {
 			Value = Info.Default;
 			Toggled = false;
-			Mode = Info.Mode or 'Toggle'; -- Always, Toggle, Hold
+			Mode = Info.Mode or 'Toggle';
 			Type = 'KeyPicker';
 			Callback = Info.Callback or function(Value) end;
 			ChangedCallback = Info.ChangedCallback or function(New) end;
@@ -1409,9 +1389,8 @@ do
 
 		return Label;
 	end;
-	-- UPDATE NOW
+
 	function Funcs:AddButton(...)
-		-- TODO: Eventually redo this
 		local Button = {};
 		local function ProcessButtonParams(Class, Obj, ...)
 			local Props = select(1, ...)
@@ -1796,28 +1775,20 @@ do
 			end);
 		end
 
-		-- https://devforum.roblox.com/t/how-to-make-textboxes-follow-current-cursor-position/1368429/6
-		-- thank you nicemike40 :)
-
 		local function Update()
 			local PADDING = 2
 			local reveal = Container.AbsoluteSize.X
 
 			if not Box:IsFocused() or Box.TextBounds.X <= reveal - 2 * PADDING then
-				-- we aren't focused, or we fit so be normal
 				Box.Position = UDim2.new(0, PADDING, 0, 0)
 			else
-				-- we are focused and don't fit, so adjust position
 				local cursor = Box.CursorPosition
 				if cursor ~= -1 then
-					-- calculate pixel width of text from start to cursor
 					local subtext = string.sub(Box.Text, 1, cursor-1)
 					local width = TextService:GetTextSize(subtext, Box.TextSize, Box.Font, Vector2.new(math.huge, math.huge)).X
 
-					-- check if we're inside the box with the cursor
 					local currentCursorPos = Box.Position.X.Offset + width
 
-					-- adjust if necessary
 					if currentCursorPos < PADDING then
 						Box.Position = UDim2.fromOffset(PADDING-width, 0)
 					elseif currentCursorPos > reveal - PADDING - 1 then
@@ -1964,7 +1935,7 @@ do
 
 		ToggleRegion.InputBegan:Connect(function(Input)
 			if (Input.UserInputType == Enum.UserInputType.MouseButton1) and not Library:MouseIsOverOpenedFrame() then
-				Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+				Toggle:SetValue(not Toggle.Value)
 				Library:AttemptSave();
 			end;
 		end);
@@ -1973,7 +1944,7 @@ do
 			if Library:MouseIsOverOpenedFrame() then
 				return
 			end
-			Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+			Toggle:SetValue(not Toggle.Value)
 			Library:AttemptSave();
 		end)
 
@@ -2215,7 +2186,7 @@ do
 			Value = Info.Multi and {};
 			Multi = Info.Multi;
 			Type = 'Dropdown';
-			SpecialType = Info.SpecialType; -- can be either 'Player' or 'Team'
+			SpecialType = Info.SpecialType;
 			Callback = Info.Callback or function(Value) end;
 		};
 
@@ -2787,66 +2758,163 @@ do
 		Parent = Library.NotificationArea;
 	});
 
+	-- ── Watermark (styled to match CreateToggleButton) ──────────────────
 	local WatermarkOuter = Library:Create('Frame', {
-		BorderColor3 = Color3.new(0, 0, 0);
-		Position = UDim2.new(0, 100, 0, -25);
-		Size = UDim2.new(0, 213, 0, 20);
-		ZIndex = 200;
-		Visible = false;
-		Parent = ScreenGui;
+		BackgroundColor3 = Library.OutlineColor;
+		BorderSizePixel  = 0;
+		Position         = UDim2.fromOffset(10, 45);
+		Size             = UDim2.fromOffset(200, 28);
+		ZIndex           = 200;
+		Visible          = false;
+		Parent           = ScreenGui;
 	});
 
+	Library:Create('UICorner', {
+		CornerRadius = UDim.new(0, 4);
+		Parent       = WatermarkOuter;
+	});
+
+	Library:AddToRegistry(WatermarkOuter, {
+		BackgroundColor3 = 'OutlineColor';
+	});
+
+	-- Drop-shadow illusion
+	local WatermarkShadow = Library:Create('Frame', {
+		BackgroundColor3       = Color3.new(0, 0, 0);
+		BackgroundTransparency = 0.6;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0, -1, 0, 1);
+		Size                   = UDim2.new(1, 2, 1, 2);
+		ZIndex                 = 199;
+		Parent                 = WatermarkOuter;
+	});
+
+	Library:Create('UICorner', {
+		CornerRadius = UDim.new(0, 5);
+		Parent       = WatermarkShadow;
+	});
+
+	-- Inner background
 	local WatermarkInner = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
-		BorderColor3 = Library.AccentColor;
-		BorderMode = Enum.BorderMode.Inset;
-		Size = UDim2.new(1, 0, 1, 0);
-		ZIndex = 201;
-		Parent = WatermarkOuter;
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 1, 0, 1);
+		Size             = UDim2.new(1, -2, 1, -2);
+		ZIndex           = 201;
+		Parent           = WatermarkOuter;
+	});
+
+	Library:Create('UICorner', {
+		CornerRadius = UDim.new(0, 3);
+		Parent       = WatermarkInner;
 	});
 
 	Library:AddToRegistry(WatermarkInner, {
-		BorderColor3 = 'AccentColor';
+		BackgroundColor3 = 'MainColor';
 	});
 
-	local InnerFrame = Library:Create('Frame', {
-		BackgroundColor3 = Color3.new(1, 1, 1);
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, 1, 0, 1);
-		Size = UDim2.new(1, -2, 1, -2);
-		ZIndex = 202;
-		Parent = WatermarkInner;
+	-- Top accent bar
+	local WatermarkAccentBar = Library:Create('Frame', {
+		BackgroundColor3 = Library.AccentColor;
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, 2);
+		ZIndex           = 203;
+		Parent           = WatermarkInner;
 	});
 
-	local Gradient = Library:Create('UIGradient', {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Library:GetDarkerColor(Library.MainColor)),
-			ColorSequenceKeypoint.new(1, Library.MainColor),
-		});
-		Rotation = -90;
-		Parent = InnerFrame;
+	Library:Create('UICorner', {
+		CornerRadius = UDim.new(0, 3);
+		Parent       = WatermarkAccentBar;
 	});
 
-	Library:AddToRegistry(Gradient, {
-		Color = function()
-			return ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Library:GetDarkerColor(Library.MainColor)),
-				ColorSequenceKeypoint.new(1, Library.MainColor),
-			});
-		end
+	Library:AddToRegistry(WatermarkAccentBar, {
+		BackgroundColor3 = 'AccentColor';
 	});
+
+	-- Bottom accent bar (subtle)
+	local WatermarkAccentBarBottom = Library:Create('Frame', {
+		BackgroundColor3       = Library.AccentColor;
+		BackgroundTransparency = 0.75;
+		BorderSizePixel        = 0;
+		AnchorPoint            = Vector2.new(0, 1);
+		Position               = UDim2.new(0, 0, 1, 0);
+		Size                   = UDim2.new(1, 0, 0, 1);
+		ZIndex                 = 203;
+		Parent                 = WatermarkInner;
+	});
+
+	Library:Create('UICorner', {
+		CornerRadius = UDim.new(0, 3);
+		Parent       = WatermarkAccentBarBottom;
+	});
+
+	Library:AddToRegistry(WatermarkAccentBarBottom, {
+		BackgroundColor3 = 'AccentColor';
+	});
+
+	-- UIScale for hover animation
+	local WatermarkScale = Instance.new('UIScale');
+	WatermarkScale.Scale  = 1;
+	WatermarkScale.Parent = WatermarkOuter;
 
 	local WatermarkLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 5, 0, 0);
-		Size = UDim2.new(1, -4, 1, 0);
-		TextSize = 14;
+		Position       = UDim2.new(0, 8, 0, 0);
+		Size           = UDim2.new(1, -12, 1, 0);
+		TextSize       = 12;
 		TextXAlignment = Enum.TextXAlignment.Left;
-		ZIndex = 203;
-		Parent = InnerFrame;
+		ZIndex         = 204;
+		Parent         = WatermarkInner;
 	});
 
-	Library.Watermark = WatermarkOuter;
-	Library.WatermarkText = WatermarkLabel;
+	-- Hover effects (matching CreateToggleButton)
+	local _wmHovered = false;
+	local _wmFastTween   = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+
+	local function _wmLighten(c, amt)
+		return Color3.new(
+			math.clamp(c.R + amt, 0, 1),
+			math.clamp(c.G + amt, 0, 1),
+			math.clamp(c.B + amt, 0, 1)
+		);
+	end;
+
+	WatermarkOuter.MouseEnter:Connect(function()
+		if _wmHovered then return end;
+		_wmHovered = true;
+
+		TweenService:Create(WatermarkInner, _wmFastTween, {
+			BackgroundColor3 = _wmLighten(Library.MainColor, 0.05);
+		}):Play();
+
+		TweenService:Create(WatermarkAccentBar, _wmFastTween, {
+			Size = UDim2.new(1, 0, 0, 3);
+		}):Play();
+
+		TweenService:Create(WatermarkScale, _wmFastTween, {
+			Scale = 1.04;
+		}):Play();
+	end);
+
+	WatermarkOuter.MouseLeave:Connect(function()
+		if not _wmHovered then return end;
+		_wmHovered = false;
+
+		TweenService:Create(WatermarkInner, _wmFastTween, {
+			BackgroundColor3 = Library.MainColor;
+		}):Play();
+
+		TweenService:Create(WatermarkAccentBar, _wmFastTween, {
+			Size = UDim2.new(1, 0, 0, 2);
+		}):Play();
+
+		TweenService:Create(WatermarkScale, _wmFastTween, {
+			Scale = 1;
+		}):Play();
+	end);
+
+	Library.Watermark          = WatermarkOuter;
+	Library.WatermarkText      = WatermarkLabel;
+	Library.WatermarkAccentBar = WatermarkAccentBar;
 	Library:MakeDraggable(Library.Watermark);
 
 
@@ -2926,10 +2994,9 @@ function Library:SetWatermarkVisibility(Bool)
 end;
 
 function Library:SetWatermark(Text)
-	local X, Y = Library:GetTextBounds(Text, Library.Font, 14);
-	Library.Watermark.Size = UDim2.new(0, X + 15, 0, (Y * 1.5) + 3);
-	Library:SetWatermarkVisibility(true)
-
+	local X = Library:GetTextBounds(Text, Library.Font, 12);
+	Library.Watermark.Size = UDim2.fromOffset(X + 20, 28);
+	Library:SetWatermarkVisibility(true);
 	Library.WatermarkText.Text = Text;
 end;
 
@@ -3091,13 +3158,13 @@ function Library:CreateToggleButton(Text)
 
     -- ── Sounds ──────────────────────────────────────────────────────
     local ClickSound = Instance.new('Sound');
-    ClickSound.SoundId  = 'rbxassetid://6895079853';  -- soft UI click
+    ClickSound.SoundId  = 'rbxassetid://6895079853';
     ClickSound.Volume   = 0.35;
     ClickSound.RollOffMaxDistance = 0;
     ClickSound.Parent   = ButtonOuter;
 
     local HoverSound = Instance.new('Sound');
-    HoverSound.SoundId  = 'rbxassetid://6026984224';  -- subtle hover tick
+    HoverSound.SoundId  = 'rbxassetid://6026984224';
     HoverSound.Volume   = 0.12;
     HoverSound.RollOffMaxDistance = 0;
     HoverSound.Parent   = ButtonOuter;
@@ -3631,7 +3698,6 @@ function Library:CreateWindow(...)
 			local BoxInner = Library:Create('Frame', {
 				BackgroundColor3 = Library.BackgroundColor;
 				BorderColor3 = Color3.new(0, 0, 0);
-				-- BorderMode = Enum.BorderMode.Inset;
 				Size = UDim2.new(1, -2, 1, -2);
 				Position = UDim2.new(0, 1, 0, 1);
 				ZIndex = 4;
@@ -3731,7 +3797,6 @@ function Library:CreateWindow(...)
 			local BoxInner = Library:Create('Frame', {
 				BackgroundColor3 = Library.BackgroundColor;
 				BorderColor3 = Color3.new(0, 0, 0);
-				-- BorderMode = Enum.BorderMode.Inset;
 				Size = UDim2.new(1, -2, 1, -2);
 				Position = UDim2.new(0, 1, 0, 1);
 				ZIndex = 4;
@@ -3953,14 +4018,11 @@ function Library:CreateWindow(...)
 		local FadeTime = Config.MenuFadeTime;
 		Fading = true;
 		Toggled = (not Toggled);
-		--ModalElement.Modal = Toggled;
 
 		if Toggled then
-			-- A bit scuffed, but if we're going from not toggled -> toggled we want to show the frame immediately so that the fade is visible.
 			Outer.Visible = true;
 
 			task.spawn(function()
-				-- TODO: add cursor fade?
 				local State = InputService.MouseIconEnabled;
 
 				local Cursor = Drawing.new('Triangle');
