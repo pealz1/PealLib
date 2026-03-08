@@ -3434,6 +3434,169 @@ end;
     return ButtonOuter;
 end;
 
+function Library:CreateHomeTab(Window, Info)
+	Info = Info or {};
+	local ScriptName  = Info.ScriptName  or 'Script';
+	local Version     = Info.Version     or 'v1.0';
+	local Creator     = Info.Creator     or 'Unknown';
+	local Discord     = Info.Discord     or 'N/A';
+	local Description = Info.Description or 'No description provided.';
+
+	-- Detect current game via MarketplaceService
+	local GameName = 'Unknown Game';
+	local PlaceId  = game.PlaceId;
+	pcall(function()
+		local Info = game:GetService('MarketplaceService'):GetProductInfo(PlaceId);
+		GameName = Info.Name or GameName;
+	end);
+
+	local HomeTab = Window:AddTab('🏠 Home');
+
+	-- ── LEFT SIDE ─────────────────────────────────────────────────────────
+	local InfoBox = HomeTab:AddLeftGroupbox('Script Info');
+
+	-- Animated welcome label (cycles through accent colors)
+	local WelcomeLabel = InfoBox:AddLabel('✦  Welcome to ' .. ScriptName .. '  ✦', false);
+
+	InfoBox:AddBlank(4);
+	InfoBox:AddDivider();
+	InfoBox:AddBlank(2);
+
+	InfoBox:AddLabel('📋  Version:  ' .. Version, false);
+	InfoBox:AddBlank(2);
+	InfoBox:AddLabel('👤  Creator:  ' .. Creator, false);
+	InfoBox:AddBlank(2);
+	InfoBox:AddLabel('🎮  Game:  ' .. GameName, false);
+	InfoBox:AddBlank(2);
+	InfoBox:AddLabel('🆔  Place ID:  ' .. tostring(PlaceId), false);
+	InfoBox:AddBlank(2);
+
+	-- Live session uptime counter
+	local UptimeLabel = InfoBox:AddLabel('⏱  Uptime:  0s', false);
+	InfoBox:AddBlank(4);
+	InfoBox:AddDivider();
+	InfoBox:AddBlank(2);
+	InfoBox:AddLabel(Description, true);
+
+	-- ── RIGHT SIDE ────────────────────────────────────────────────────────
+	local SocialBox = HomeTab:AddRightGroupbox('Socials & Links');
+
+	SocialBox:AddButton({
+		Text = '💬  Copy Discord Invite',
+		Func = function()
+			pcall(setclipboard, Discord);
+			Library:Notify('Discord link copied to clipboard!', 3);
+		end;
+	});
+
+	SocialBox:AddBlank(3);
+
+	SocialBox:AddButton({
+		Text = '🌐  Copy Game Link',
+		Func = function()
+			pcall(setclipboard, 'https://www.roblox.com/games/' .. tostring(PlaceId));
+			Library:Notify('Game link copied to clipboard!', 3);
+		end;
+	});
+
+	SocialBox:AddBlank(3);
+	SocialBox:AddDivider();
+	SocialBox:AddBlank(2);
+
+	-- Live server info
+	local ServerLabel = SocialBox:AddLabel('👥  Players:  ' .. #game:GetService("Players"):GetPlayers() .. ' / ' .. game.Players.MaxPlayers, false);
+	SocialBox:AddBlank(2);
+
+	local PingLabel = SocialBox:AddLabel('📶  Ping:  --', false);
+	SocialBox:AddBlank(2);
+
+	local FpsLabel = SocialBox:AddLabel('🖥  FPS:  --', false);
+	SocialBox:AddBlank(4);
+	SocialBox:AddDivider();
+	SocialBox:AddBlank(2);
+
+	-- Tips that rotate every 8 seconds
+	local Tips = {
+		'💡  Tip: Right-click keybinds to change mode.',
+		'💡  Tip: Drag any panel by its title bar.',
+		'💡  Tip: Use RightShift to toggle the menu.',
+		'💡  Tip: Right-click color pickers to copy hex.',
+		'💡  Tip: Configs auto-save when you change a value.',
+	};
+
+	local TipLabel = SocialBox:AddLabel(Tips[1], true);
+	SocialBox:AddBlank(2);
+
+	-- ── LIVE UPDATE LOOP ──────────────────────────────────────────────────
+	local StartTime = tick();
+	local TipIndex  = 1;
+	local LastTipSwap = tick();
+
+	local RunService = game:GetService('RunService');
+	local StatsService = game:GetService('Stats');
+	local Players = game:GetService('Players');
+
+	local WelcomeMessages = {
+		'✦  Welcome to ' .. ScriptName .. '  ✦',
+		'✦  Enjoy ' .. ScriptName .. ' ' .. Version .. '  ✦',
+		'✦  Made by ' .. Creator .. '  ✦',
+	};
+	local WelcomeIndex = 1;
+	local LastWelcomeSwap = tick();
+
+	Library:GiveSignal(RunService.Heartbeat:Connect(function()
+		local Now = tick();
+
+		-- Uptime
+		local Elapsed = math.floor(Now - StartTime);
+		local Hours   = math.floor(Elapsed / 3600);
+		local Mins    = math.floor((Elapsed % 3600) / 60);
+		local Secs    = Elapsed % 60;
+		local UptimeStr;
+
+		if Hours > 0 then
+			UptimeStr = string.format('%dh %dm %ds', Hours, Mins, Secs);
+		elseif Mins > 0 then
+			UptimeStr = string.format('%dm %ds', Mins, Secs);
+		else
+			UptimeStr = Secs .. 's';
+		end;
+
+		pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
+
+		-- FPS
+		local FPS = math.floor(1 / RunService.Heartbeat:Wait());
+		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. FPS) end);
+
+		-- Ping
+		pcall(function()
+			local Ping = Players.LocalPlayer:GetNetworkPing and math.floor(Players.LocalPlayer:GetNetworkPing() * 1000) or '?';
+			PingLabel:SetText('📶  Ping:  ' .. Ping .. 'ms');
+		end);
+
+		-- Player count (updates when players join/leave)
+		pcall(function()
+			ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
+		end);
+
+		-- Rotate tips every 8s
+		if Now - LastTipSwap >= 8 then
+			LastTipSwap = Now;
+			TipIndex = (TipIndex % #Tips) + 1;
+			pcall(function() TipLabel:SetText(Tips[TipIndex]) end);
+		end;
+
+		-- Rotate welcome message every 4s
+		if Now - LastWelcomeSwap >= 4 then
+			LastWelcomeSwap = Now;
+			WelcomeIndex = (WelcomeIndex % #WelcomeMessages) + 1;
+			pcall(function() WelcomeLabel:SetText(WelcomeMessages[WelcomeIndex]) end);
+		end;
+	end));
+
+	return HomeTab;
+end;
+
 function Library:Notify(Text, Time)
 	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
 
