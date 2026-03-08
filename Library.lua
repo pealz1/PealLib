@@ -3544,9 +3544,7 @@ function Library:CreateHomeTab(Window, Info)
 	local WelcomeIndex = 1;
 	local LastWelcomeSwap = tick();
 
-	Library:GiveSignal(RunService.Heartbeat:Connect(function()
-		local Now = tick();
-local LastFpsTime = tick();
+	local LastFpsTime = tick();
 	local FpsCount = 0;
 	local CurrentFps = 0;
 
@@ -3606,9 +3604,9 @@ local LastFpsTime = tick();
 			WelcomeIndex = (WelcomeIndex % #WelcomeMessages) + 1;
 			pcall(function() WelcomeLabel:SetText(WelcomeMessages[WelcomeIndex]) end);
 		end;
-	end));
+end));
 
-	return HomeTab;
+return HomeTab;
 end;
 
 function Library:Notify(Text, Time)
