@@ -353,16 +353,6 @@ function Library:RemoveFromRegistry(Instance)
 end;
 
 function Library:UpdateColorsUsingRegistry()
-	-- TODO: Could have an 'active' list of objects
-	-- where the active list only contains Visible objects.
-
-	-- IMPL: Could setup .Changed events on the AddToRegistry function
-	-- that listens for the 'Visible' propert being changed.
-	-- Visible: true => Add to active list, and call UpdateColors function
-	-- Visible: false => Remove from active list.
-
-	-- The above would be especially efficient for a rainbow menu color or live color-changing.
-
 	for Idx, Object in next, Library.Registry do
 		for Property, ColorIdx in next, Object.Properties do
 			if type(ColorIdx) == 'string' then
@@ -375,18 +365,15 @@ function Library:UpdateColorsUsingRegistry()
 end;
 
 function Library:GiveSignal(Signal)
-	-- Only used for signals not attached to library instances, as those should be cleaned up on object destruction by Roblox
 	table.insert(Library.Signals, Signal)
 end
 
 function Library:Unload()
-	-- Unload all of the signals
 	for Idx = #Library.Signals, 1, -1 do
 		local Connection = table.remove(Library.Signals, Idx)
 		Connection:Disconnect()
 	end
 
-	 -- Call our unload callback, maybe to undo some hooks etc
 	if Library.OnUnload then
 		Library.OnUnload()
 	end
@@ -411,7 +398,6 @@ do
 
 	function Funcs:AddColorPicker(Idx, Info)
 		local ToggleLabel = self.TextLabel;
-		-- local Container = self.Container;
 
 		assert(Info.Default, 'AddColorPicker: Missing default value.');
 
@@ -442,7 +428,6 @@ do
 			Parent = ToggleLabel;
 		});
 
-		-- Transparency image taken from https://github.com/matas3535/SplixPrivateDrawingLibrary/blob/main/Library.lua cus i'm lazy
 		local CheckerFrame = Library:Create('ImageLabel', {
 			BorderSizePixel = 0;
 			Size = UDim2.new(0, 27, 0, 13);
@@ -451,11 +436,6 @@ do
 			Visible = not not Info.Transparency;
 			Parent = DisplayFrame;
 		});
-
-		-- 1/16/23
-		-- Rewrote this to be placed inside the Library ScreenGui
-		-- There was some issue which caused RelativeOffset to be way off
-		-- Thus the color picker would never show
 
 		local PickerFrameOuter = Library:Create('Frame', {
 			Name = 'Color';
@@ -659,7 +639,7 @@ do
 			Position = UDim2.fromOffset(5, 5);
 			TextXAlignment = Enum.TextXAlignment.Left;
 			TextSize = 14;
-			Text = ColorPicker.Title,--Info.Default;
+			Text = ColorPicker.Title,
 			TextWrapped = false;
 			ZIndex = 16;
 			Parent = PickerFrameInner;
@@ -1012,7 +992,7 @@ do
 		local KeyPicker = {
 			Value = Info.Default;
 			Toggled = false;
-			Mode = Info.Mode or 'Toggle'; -- Always, Toggle, Hold
+			Mode = Info.Mode or 'Toggle';
 			Type = 'KeyPicker';
 			Callback = Info.Callback or function(Value) end;
 			ChangedCallback = Info.ChangedCallback or function(New) end;
@@ -1409,9 +1389,8 @@ do
 
 		return Label;
 	end;
-	-- UPDATE NOW
+
 	function Funcs:AddButton(...)
-		-- TODO: Eventually redo this
 		local Button = {};
 		local function ProcessButtonParams(Class, Obj, ...)
 			local Props = select(1, ...)
@@ -1796,28 +1775,20 @@ do
 			end);
 		end
 
-		-- https://devforum.roblox.com/t/how-to-make-textboxes-follow-current-cursor-position/1368429/6
-		-- thank you nicemike40 :)
-
 		local function Update()
 			local PADDING = 2
 			local reveal = Container.AbsoluteSize.X
 
 			if not Box:IsFocused() or Box.TextBounds.X <= reveal - 2 * PADDING then
-				-- we aren't focused, or we fit so be normal
 				Box.Position = UDim2.new(0, PADDING, 0, 0)
 			else
-				-- we are focused and don't fit, so adjust position
 				local cursor = Box.CursorPosition
 				if cursor ~= -1 then
-					-- calculate pixel width of text from start to cursor
 					local subtext = string.sub(Box.Text, 1, cursor-1)
 					local width = TextService:GetTextSize(subtext, Box.TextSize, Box.Font, Vector2.new(math.huge, math.huge)).X
 
-					-- check if we're inside the box with the cursor
 					local currentCursorPos = Box.Position.X.Offset + width
 
-					-- adjust if necessary
 					if currentCursorPos < PADDING then
 						Box.Position = UDim2.fromOffset(PADDING-width, 0)
 					elseif currentCursorPos > reveal - PADDING - 1 then
@@ -1964,7 +1935,7 @@ do
 
 		ToggleRegion.InputBegan:Connect(function(Input)
 			if (Input.UserInputType == Enum.UserInputType.MouseButton1) and not Library:MouseIsOverOpenedFrame() then
-				Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+				Toggle:SetValue(not Toggle.Value)
 				Library:AttemptSave();
 			end;
 		end);
@@ -1973,7 +1944,7 @@ do
 			if Library:MouseIsOverOpenedFrame() then
 				return
 			end
-			Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+			Toggle:SetValue(not Toggle.Value)
 			Library:AttemptSave();
 		end)
 
@@ -2215,7 +2186,7 @@ do
 			Value = Info.Multi and {};
 			Multi = Info.Multi;
 			Type = 'Dropdown';
-			SpecialType = Info.SpecialType; -- can be either 'Player' or 'Team'
+			SpecialType = Info.SpecialType;
 			Callback = Info.Callback or function(Value) end;
 		};
 
@@ -2787,7 +2758,7 @@ do
 		Parent = Library.NotificationArea;
 	});
 
--- ── Watermark (styled to match CreateToggleButton) ───────────────────────
+-- ── Watermark ───────────────────────────────────────────────────────────
 local WatermarkOuter = Library:Create('Frame', {
 	BackgroundColor3 = Library.OutlineColor;
 	BorderSizePixel  = 0;
@@ -2807,7 +2778,6 @@ Library:AddToRegistry(WatermarkOuter, {
 	BackgroundColor3 = 'OutlineColor';
 });
 
--- Drop shadow (same as toggle button)
 local WatermarkShadow = Library:Create('Frame', {
 	BackgroundColor3       = Color3.new(0, 0, 0);
 	BackgroundTransparency = 0.6;
@@ -2823,7 +2793,6 @@ Library:Create('UICorner', {
 	Parent       = WatermarkShadow;
 });
 
--- Inner background
 local WatermarkInner = Library:Create('Frame', {
 	BackgroundColor3 = Library.MainColor;
 	BorderSizePixel  = 0;
@@ -2842,7 +2811,6 @@ Library:AddToRegistry(WatermarkInner, {
 	BackgroundColor3 = 'MainColor';
 });
 
--- Top accent bar
 local WatermarkAccentBar = Library:Create('Frame', {
 	BackgroundColor3 = Library.AccentColor;
 	BorderSizePixel  = 0;
@@ -2860,7 +2828,6 @@ Library:AddToRegistry(WatermarkAccentBar, {
 	BackgroundColor3 = 'AccentColor';
 });
 
--- Bottom accent bar (subtle mirror)
 local WatermarkAccentBarBottom = Library:Create('Frame', {
 	BackgroundColor3       = Library.AccentColor;
 	BackgroundTransparency = 0.75;
@@ -2881,9 +2848,6 @@ Library:AddToRegistry(WatermarkAccentBarBottom, {
 	BackgroundColor3 = 'AccentColor';
 });
 
--- ── SPECIAL: Pulsing live-status dot ────────────────────────────────────
--- A small glowing ring that breathes with the accent color, 
--- indicating the script is active/running live.
 local LiveDot = Library:Create('Frame', {
 	BackgroundColor3 = Library.AccentColor;
 	BorderSizePixel  = 0;
@@ -2903,7 +2867,6 @@ Library:AddToRegistry(LiveDot, {
 	BackgroundColor3 = 'AccentColor';
 });
 
--- Glow ring that pulses outward
 local LiveDotGlow = Library:Create('Frame', {
 	BackgroundColor3       = Library.AccentColor;
 	BackgroundTransparency = 0.55;
@@ -2924,7 +2887,6 @@ Library:AddToRegistry(LiveDotGlow, {
 	BackgroundColor3 = 'AccentColor';
 });
 
--- Vertical divider (icon | text, same as toggle button)
 local WatermarkDivider = Library:Create('Frame', {
 	BackgroundColor3       = Library.OutlineColor;
 	BackgroundTransparency = 0.4;
@@ -2939,7 +2901,6 @@ Library:AddToRegistry(WatermarkDivider, {
 	BackgroundColor3 = 'OutlineColor';
 });
 
--- Text
 local WatermarkLabel = Library:CreateLabel({
 	Position       = UDim2.new(0, 27, 0, 0);
 	Size           = UDim2.new(1, -31, 1, 0);
@@ -2949,12 +2910,10 @@ local WatermarkLabel = Library:CreateLabel({
 	Parent         = WatermarkInner;
 });
 
--- UIScale for hover bounce (same as toggle button)
 local WatermarkScale = Instance.new('UIScale');
 WatermarkScale.Scale  = 1;
 WatermarkScale.Parent = WatermarkOuter;
 
--- Hover sound
 local WmHoverSound = Instance.new('Sound');
 WmHoverSound.SoundId             = 'rbxassetid://6026984224';
 WmHoverSound.Volume              = 0.12;
@@ -3009,7 +2968,6 @@ WatermarkOuter.MouseLeave:Connect(function()
 	}):Play();
 end);
 
--- Start the pulsing glow loop on the live dot
 task.spawn(function()
 	local pulseTween = TweenInfo.new(0.85, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true);
 	TweenService:Create(LiveDotGlow, pulseTween, {
@@ -3101,7 +3059,6 @@ end;
 function Library:SetWatermark(Text)
 	Library.WatermarkText.Text = Text;
 	local X = Library:GetTextBounds(Text, Library.Font, 12);
-	-- 27px left offset (dot+divider) + 8px right padding
 	Library.Watermark.Size = UDim2.fromOffset(X + 27 + 12, 28);
 	Library:SetWatermarkVisibility(true);
 end;
@@ -3113,7 +3070,6 @@ function Library:CreateToggleButton(Text)
     local fastTween  = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
     local bounceTween = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
 
-    -- ── Outer border frame ──────────────────────────────────────────
     local ButtonOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.OutlineColor or Color3.fromRGB(60, 60, 60);
         BorderSizePixel  = 0;
@@ -3132,7 +3088,6 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = 'OutlineColor';
     });
 
-    -- Drop-shadow illusion (slightly larger dark frame behind)
     local Shadow = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(0, 0, 0);
         BackgroundTransparency = 0.6;
@@ -3148,7 +3103,6 @@ function Library:CreateToggleButton(Text)
         Parent       = Shadow;
     });
 
-    -- ── Inner background ────────────────────────────────────────────
     local ButtonInner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
         BorderSizePixel  = 0;
@@ -3167,7 +3121,6 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = 'MainColor';
     });
 
-    -- ── Accent bar (top edge, matches groupbox style) ───────────────
     local AccentBar = Library:Create('Frame', {
         BackgroundColor3 = Library.AccentColor;
         BorderSizePixel  = 0;
@@ -3185,7 +3138,6 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = 'AccentColor';
     });
 
-    -- Bottom accent bar (subtle mirror, 0.5 transparent)
     local AccentBarBottom = Library:Create('Frame', {
         BackgroundColor3    = Library.AccentColor;
         BackgroundTransparency = 0.75;
@@ -3206,7 +3158,6 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = 'AccentColor';
     });
 
-    -- ── Hamburger icon ──────────────────────────────────────────────
     local IconLabel = Library:Create('TextLabel', {
         BackgroundTransparency = 1;
         Position  = UDim2.new(0, 6, 0, 0);
@@ -3224,7 +3175,6 @@ function Library:CreateToggleButton(Text)
         TextColor3 = 'AccentColor';
     });
 
-    -- Vertical divider between icon and text
     local Divider = Library:Create('Frame', {
         BackgroundColor3    = Library.OutlineColor or Color3.fromRGB(60, 60, 60);
         BackgroundTransparency = 0.4;
@@ -3239,7 +3189,6 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = 'OutlineColor';
     });
 
-    -- ── Text label ──────────────────────────────────────────────────
     local TextLabel = Library:Create('TextLabel', {
         BackgroundTransparency = 1;
         Position  = UDim2.new(0, 28, 0, 0);
@@ -3257,25 +3206,22 @@ function Library:CreateToggleButton(Text)
         TextColor3 = 'FontColor';
     });
 
-    -- ── UIScale (for press/bounce animation) ────────────────────────
     local Scale = Instance.new('UIScale');
     Scale.Scale  = 1;
     Scale.Parent = ButtonOuter;
 
-    -- ── Sounds ──────────────────────────────────────────────────────
     local ClickSound = Instance.new('Sound');
-    ClickSound.SoundId  = 'rbxassetid://6895079853';  -- soft UI click
+    ClickSound.SoundId  = 'rbxassetid://6895079853';
     ClickSound.Volume   = 0.35;
     ClickSound.RollOffMaxDistance = 0;
     ClickSound.Parent   = ButtonOuter;
 
     local HoverSound = Instance.new('Sound');
-    HoverSound.SoundId  = 'rbxassetid://6026984224';  -- subtle hover tick
+    HoverSound.SoundId  = 'rbxassetid://6026984224';
     HoverSound.Volume   = 0.12;
     HoverSound.RollOffMaxDistance = 0;
     HoverSound.Parent   = ButtonOuter;
 
-    -- ── Hover effects ───────────────────────────────────────────────
     local isHovered  = false;
     local isDragging = false;
 
@@ -3330,8 +3276,7 @@ function Library:CreateToggleButton(Text)
         }):Play();
     end);
 
-    -- ── Drag + click ────────────────────────────────────────────────
-local isOpen = true;  -- GUI starts visible
+local isOpen = true;
 local function doToggle()
     task.spawn(function() Library:Toggle() end);
     isOpen = not isOpen;
@@ -3347,12 +3292,10 @@ end;
 
         isDragging = false;
 
-        -- Press-down squash
         TweenService:Create(Scale, TweenInfo.new(0.07, Enum.EasingStyle.Quad), {
             Scale = 0.91;
         }):Play();
 
-        -- Darken inner on press
         TweenService:Create(ButtonInner, TweenInfo.new(0.07), {
             BackgroundColor3 = lighten(Library.MainColor, -0.04);
         }):Play();
@@ -3382,7 +3325,6 @@ end;
     	end;
 		end);
 
-        -- Wait for release via InputEnded
         local releaseConn;
         releaseConn = game:GetService('UserInputService').InputEnded:Connect(function(endInput)
             if endInput ~= Input then return end;
@@ -3390,7 +3332,6 @@ end;
 
             moved:Disconnect();
 
-            -- Release bounce-back
             TweenService:Create(Scale, bounceTween, {
                 Scale = isHovered and 1.04 or 1;
             }):Play();
@@ -3402,7 +3343,6 @@ end;
             }):Play();
 
             if not isDragging then
-                -- Accent flash on click
                 pcall(function() ClickSound:Play() end);
 
                 TweenService:Create(AccentBar, TweenInfo.new(0.05), {
@@ -3423,7 +3363,6 @@ end;
     end)
 		end)
 
-    -- Mobile TouchTap fallback
     ButtonOuter.TouchTap:Connect(function()
         if not isDragging then
             pcall(function() ClickSound:Play() end)
@@ -3434,6 +3373,10 @@ end;
     return ButtonOuter;
 end;
 
+-- ══════════════════════════════════════════════════════════════════════════════
+-- CreateHomeTab  —  Shows as a splash on startup (no tab button in tab bar).
+--                   Disappears permanently when the user clicks any real tab.
+-- ══════════════════════════════════════════════════════════════════════════════
 function Library:CreateHomeTab(Window, Info)
 	Info = Info or {};
 	local ScriptName  = Info.ScriptName  or 'Script';
@@ -3442,20 +3385,193 @@ function Library:CreateHomeTab(Window, Info)
 	local Discord     = Info.Discord     or 'N/A';
 	local Description = Info.Description or 'No description provided.';
 
-	-- Detect current game via MarketplaceService
 	local GameName = 'Unknown Game';
 	local PlaceId  = game.PlaceId;
 	pcall(function()
-		local Info = game:GetService('MarketplaceService'):GetProductInfo(PlaceId);
-		GameName = Info.Name or GameName;
+		local mInfo = game:GetService('MarketplaceService'):GetProductInfo(PlaceId);
+		GameName = mInfo.Name or GameName;
 	end);
 
-	local HomeTab = Window:AddTab('🏠 Home');
+	-- ── Build a silent tab-like frame directly in TabContainer ───────────
+	-- We do NOT call Window:AddTab(), so no button appears in the tab bar.
 
-	-- ── LEFT SIDE ─────────────────────────────────────────────────────────
+	local TabContainer = Window.TabContainer;
+
+	local HomeFrame = Library:Create('ScrollingFrame', {
+		Name                 = 'HomeTabFrame';
+		BackgroundTransparency = 1;
+		Position             = UDim2.new(0, 0, 0, 0);
+		Size                 = UDim2.new(1, 0, 1, 0);
+		Visible              = true;   -- <── shown immediately on exec
+		ZIndex               = 2;
+		CanvasSize           = UDim2.new(0, 0, 5, 0);
+		AutomaticCanvasSize  = Enum.AutomaticSize.Y;
+		ScrollingDirection   = Enum.ScrollingDirection.Y;
+		ScrollBarThickness   = 0;
+		Parent               = TabContainer;
+	});
+
+	-- Replicate the two-column layout identical to a normal AddTab
+	local LeftSide = Library:Create('ScrollingFrame', {
+		BackgroundTransparency = 1;
+		BorderSizePixel = 0;
+		Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
+		Size     = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
+		CanvasSize = UDim2.new(0, 0, 0, 0);
+		BottomImage = ''; TopImage = '';
+		ScrollBarThickness = 0;
+		ZIndex = 2;
+		Parent = HomeFrame;
+	});
+
+	local RightSide = Library:Create('ScrollingFrame', {
+		BackgroundTransparency = 1;
+		BorderSizePixel = 0;
+		Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
+		Size     = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
+		CanvasSize = UDim2.new(0, 0, 0, 0);
+		BottomImage = ''; TopImage = '';
+		ScrollBarThickness = 0;
+		ZIndex = 2;
+		Parent = HomeFrame;
+	});
+
+	Library:Create('UIListLayout', {
+		Padding = UDim.new(0, 8);
+		FillDirection = Enum.FillDirection.Vertical;
+		SortOrder = Enum.SortOrder.LayoutOrder;
+		HorizontalAlignment = Enum.HorizontalAlignment.Center;
+		Parent = LeftSide;
+	});
+
+	Library:Create('UIListLayout', {
+		Padding = UDim.new(0, 8);
+		FillDirection = Enum.FillDirection.Vertical;
+		SortOrder = Enum.SortOrder.LayoutOrder;
+		HorizontalAlignment = Enum.HorizontalAlignment.Center;
+		Parent = RightSide;
+	});
+
+	for _, Side in next, { LeftSide, RightSide } do
+		Side:WaitForChild('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			Side.CanvasSize = UDim2.fromOffset(0, Side.UIListLayout.AbsoluteContentSize.Y);
+		end);
+	end;
+
+	-- ── Minimal HomeTab object with AddGroupbox / AddLeftGroupbox / AddRightGroupbox
+	local HomeTab = { Groupboxes = {}; Tabboxes = {}; };
+
+	function HomeTab:AddGroupbox(gInfo)
+		local Groupbox = {};
+
+		local BoxOuter = Library:Create('Frame', {
+			BackgroundColor3 = Library.OutlineColor;
+			BorderSizePixel  = 0;
+			Size             = UDim2.new(1, 0, 0, 507 + 2);
+			ZIndex           = 2;
+			Parent           = gInfo.Side == 1 and LeftSide or RightSide;
+		});
+
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = BoxOuter; });
+		Library:AddToRegistry(BoxOuter, { BackgroundColor3 = 'OutlineColor'; });
+
+		local BoxInner = Library:Create('Frame', {
+			BackgroundColor3 = Library.BackgroundColor;
+			BorderSizePixel  = 0;
+			Size             = UDim2.new(1, -2, 1, -2);
+			Position         = UDim2.new(0, 1, 0, 1);
+			ZIndex           = 4;
+			Parent           = BoxOuter;
+		});
+
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = BoxInner; });
+		Library:AddToRegistry(BoxInner, { BackgroundColor3 = 'BackgroundColor'; });
+
+		local Highlight = Library:Create('Frame', {
+			BackgroundColor3 = Library.AccentColor;
+			BorderSizePixel  = 0;
+			Size             = UDim2.new(1, 0, 0, 2);
+			ZIndex           = 5;
+			Parent           = BoxInner;
+		});
+		Library:AddToRegistry(Highlight, { BackgroundColor3 = 'AccentColor'; });
+
+		Library:CreateLabel({
+			Size           = UDim2.new(1, 0, 0, 18);
+			Position       = UDim2.new(0, 4, 0, 2);
+			TextSize       = 14;
+			Text           = gInfo.Name;
+			TextXAlignment = Enum.TextXAlignment.Left;
+			ZIndex         = 5;
+			Parent         = BoxInner;
+		});
+
+		local Container = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			Position = UDim2.new(0, 4, 0, 20);
+			Size     = UDim2.new(1, -4, 1, -20);
+			ZIndex   = 1;
+			Parent   = BoxInner;
+		});
+
+		Library:Create('UIListLayout', {
+			FillDirection = Enum.FillDirection.Vertical;
+			SortOrder     = Enum.SortOrder.LayoutOrder;
+			Parent        = Container;
+		});
+
+		function Groupbox:Resize()
+			local Size = 0;
+			for _, Element in next, Container:GetChildren() do
+				if not Element:IsA('UIListLayout') and Element.Visible then
+					Size = Size + Element.Size.Y.Offset;
+				end;
+			end;
+			BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2 + 2);
+		end;
+
+		Groupbox.Container = Container;
+		setmetatable(Groupbox, BaseGroupbox);
+
+		Groupbox:AddBlank(3);
+		Groupbox:Resize();
+
+		HomeTab.Groupboxes[gInfo.Name] = Groupbox;
+		return Groupbox;
+	end;
+
+	function HomeTab:AddLeftGroupbox(Name)
+		return HomeTab:AddGroupbox({ Side = 1; Name = Name; });
+	end;
+
+	function HomeTab:AddRightGroupbox(Name)
+		return HomeTab:AddGroupbox({ Side = 2; Name = Name; });
+	end;
+
+	-- Store references so the patch below can hide HomeFrame
+	HomeTab.Frame    = HomeFrame;
+	Window.HomeTab   = HomeTab;
+
+	-- ── Patch Window.AddTab so every real tab's ShowTab hides HomeFrame ──
+	-- We wrap once; subsequent calls to AddTab also get the wrapper because
+	-- we replace Window.AddTab in-place.
+	local _OrigAddTab = Window.AddTab;
+	Window.AddTab = function(win, name)
+		local tab = _OrigAddTab(win, name);
+		local _OrigShow = tab.ShowTab;
+		tab.ShowTab = function(t)
+			-- Hide the home splash the first time any real tab is shown
+			if Window.HomeTab and Window.HomeTab.Frame then
+				Window.HomeTab.Frame.Visible = false;
+			end;
+			_OrigShow(t);
+		end;
+		return tab;
+	end;
+
+	-- ── LEFT SIDE content ────────────────────────────────────────────────
 	local InfoBox = HomeTab:AddLeftGroupbox('Script Info');
 
-	-- Animated welcome label (cycles through accent colors)
 	local WelcomeLabel = InfoBox:AddLabel('✦  Welcome to ' .. ScriptName .. '  ✦', false);
 
 	InfoBox:AddBlank(4);
@@ -3471,14 +3587,13 @@ function Library:CreateHomeTab(Window, Info)
 	InfoBox:AddLabel('🆔  Place ID:  ' .. tostring(PlaceId), false);
 	InfoBox:AddBlank(2);
 
-	-- Live session uptime counter
 	local UptimeLabel = InfoBox:AddLabel('⏱  Uptime:  0s', false);
 	InfoBox:AddBlank(4);
 	InfoBox:AddDivider();
 	InfoBox:AddBlank(2);
 	InfoBox:AddLabel(Description, true);
 
-	-- ── RIGHT SIDE ────────────────────────────────────────────────────────
+	-- ── RIGHT SIDE content ───────────────────────────────────────────────
 	local SocialBox = HomeTab:AddRightGroupbox('Socials & Links');
 
 	SocialBox:AddButton({
@@ -3503,7 +3618,6 @@ function Library:CreateHomeTab(Window, Info)
 	SocialBox:AddDivider();
 	SocialBox:AddBlank(2);
 
-	-- Live server info
 	local ServerLabel = SocialBox:AddLabel('👥  Players:  ' .. #game:GetService("Players"):GetPlayers() .. ' / ' .. game.Players.MaxPlayers, false);
 	SocialBox:AddBlank(2);
 
@@ -3515,7 +3629,6 @@ function Library:CreateHomeTab(Window, Info)
 	SocialBox:AddDivider();
 	SocialBox:AddBlank(2);
 
-	-- Tips that rotate every 8 seconds
 	local Tips = {
 		'💡  Tip: Right-click keybinds to change mode.',
 		'💡  Tip: Drag any panel by its title bar.',
@@ -3527,21 +3640,20 @@ function Library:CreateHomeTab(Window, Info)
 	local TipLabel = SocialBox:AddLabel(Tips[1], true);
 	SocialBox:AddBlank(2);
 
-	-- ── LIVE UPDATE LOOP ──────────────────────────────────────────────────
+	-- ── Live update loop ─────────────────────────────────────────────────
 	local StartTime = tick();
 	local TipIndex  = 1;
 	local LastTipSwap = tick();
 
 	local RunService = game:GetService('RunService');
-	local StatsService = game:GetService('Stats');
-	local Players = game:GetService('Players');
+	local Players    = game:GetService('Players');
 
 	local WelcomeMessages = {
 		'✦  Welcome to ' .. ScriptName .. '  ✦',
 		'✦  Enjoy ' .. ScriptName .. ' ' .. Version .. '  ✦',
 		'✦  Made by ' .. Creator .. '  ✦',
 	};
-	local WelcomeIndex = 1;
+	local WelcomeIndex   = 1;
 	local LastWelcomeSwap = tick();
 
 	local LastFpsTime = tick();
@@ -3551,7 +3663,6 @@ function Library:CreateHomeTab(Window, Info)
 	Library:GiveSignal(RunService.Heartbeat:Connect(function(Delta)
 		local Now = tick();
 
-		-- FPS via frame counting, not :Wait()
 		FpsCount = FpsCount + 1;
 		if Now - LastFpsTime >= 1 then
 			CurrentFps = FpsCount;
@@ -3559,7 +3670,6 @@ function Library:CreateHomeTab(Window, Info)
 			LastFpsTime = Now;
 		end;
 
-		-- Uptime
 		local Elapsed = math.floor(Now - StartTime);
 		local Hours   = math.floor(Elapsed / 3600);
 		local Mins    = math.floor((Elapsed % 3600) / 60);
@@ -3577,36 +3687,31 @@ function Library:CreateHomeTab(Window, Info)
 		pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
 		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. CurrentFps) end);
 
-		-- Ping (safe)
 		pcall(function()
 			local lp = Players.LocalPlayer;
 			if lp and typeof(lp.GetNetworkPing) == 'function' then
-				local Ping = math.floor(lp:GetNetworkPing() * 1000);
-				PingLabel:SetText('📶  Ping:  ' .. Ping .. 'ms');
+				PingLabel:SetText('📶  Ping:  ' .. math.floor(lp:GetNetworkPing() * 1000) .. 'ms');
 			end;
 		end);
 
-		-- Player count
 		pcall(function()
 			ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
 		end);
 
-		-- Rotate tips every 8s
 		if Now - LastTipSwap >= 8 then
 			LastTipSwap = Now;
 			TipIndex = (TipIndex % #Tips) + 1;
 			pcall(function() TipLabel:SetText(Tips[TipIndex]) end);
 		end;
 
-		-- Rotate welcome message every 4s
 		if Now - LastWelcomeSwap >= 4 then
 			LastWelcomeSwap = Now;
 			WelcomeIndex = (WelcomeIndex % #WelcomeMessages) + 1;
 			pcall(function() WelcomeLabel:SetText(WelcomeMessages[WelcomeIndex]) end);
 		end;
-end));
+	end));
 
-return HomeTab;
+	return HomeTab;
 end;
 
 function Library:Notify(Text, Time)
@@ -3727,7 +3832,6 @@ function Library:CreateWindow(...)
 		Tabs = {};
 	};
 
--- ── Outer border ring (OutlineColor = 1px rounded border) ────────────
 	local Outer = Library:Create('Frame', {
 		AnchorPoint      = Config.AnchorPoint;
 		BackgroundColor3 = Library.OutlineColor;
@@ -3750,7 +3854,6 @@ function Library:CreateWindow(...)
 
 	Library:MakeDraggable(Outer, 30);
 
-	-- ── Inner background ──────────────────────────────────────────────────
 	local Inner = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
 		BorderSizePixel  = 0;
@@ -3769,7 +3872,6 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'MainColor';
 	});
 
-	-- ── Top accent bar (matches watermark + close button) ─────────────────
 	local WindowAccentBar = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
 		BorderSizePixel  = 0;
@@ -3787,7 +3889,6 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'AccentColor';
 	});
 
-	-- ── Bottom accent bar (subtle mirror, same as close button) ───────────
 	local WindowAccentBarBottom = Library:Create('Frame', {
 		BackgroundColor3       = Library.AccentColor;
 		BackgroundTransparency = 0.75;
@@ -3808,7 +3909,6 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'AccentColor';
 	});
 
-	-- ── Title divider line ────────────────────────────────────────────────
 	local TitleDivider = Library:Create('Frame', {
 		BackgroundColor3       = Library.OutlineColor;
 		BackgroundTransparency = 0.4;
@@ -3823,7 +3923,6 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'OutlineColor';
 	});
 
-	-- ── Title label ───────────────────────────────────────────────────────
 	local WindowLabel = Library:CreateLabel({
 		Position       = UDim2.new(0, 10, 0, 5);
 		Size           = UDim2.new(1, -20, 0, 21);
@@ -3834,7 +3933,6 @@ function Library:CreateWindow(...)
 		Parent         = Inner;
 	});
 
-	-- ── Content section ───────────────────────────────────────────────────
 	local MainSectionOuter = Library:Create('Frame', {
 		BackgroundColor3 = Library.BackgroundColor;
 		BorderSizePixel  = 0;
@@ -3941,7 +4039,6 @@ function Library:CreateWindow(...)
 			Parent   = TabButton;
 		});
 
-		-- Accent underline: visible when tab is active
 		local Blocker = Library:Create('Frame', {
 			BackgroundColor3       = Library.AccentColor;
 			BackgroundTransparency = 1;
@@ -3956,14 +4053,12 @@ function Library:CreateWindow(...)
 			BackgroundColor3 = 'AccentColor';
 		});
 
-		-- Tab hover sound
 		local TabHoverSound = Instance.new('Sound');
 		TabHoverSound.SoundId            = 'rbxassetid://6026984224';
 		TabHoverSound.Volume             = 0.1;
 		TabHoverSound.RollOffMaxDistance = 0;
 		TabHoverSound.Parent             = TabButton;
 
-		-- Tab click sound
 		local TabClickSound = Instance.new('Sound');
 		TabClickSound.SoundId            = 'rbxassetid://6895079853';
 		TabClickSound.Volume             = 0.2;
@@ -3972,7 +4067,6 @@ function Library:CreateWindow(...)
 
 		local tabTween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 
-		-- Hover: only animate when tab is NOT active (Blocker hidden = not active)
 		TabButton.MouseEnter:Connect(function()
 			if Blocker.BackgroundTransparency == 0 then return end;
 			pcall(function() TabHoverSound:Play() end);
@@ -4400,7 +4494,6 @@ function Library:CreateWindow(...)
 				Tab:AddBlank(3);
 				Tab:Resize();
 
-				-- Show first tab (number is 2 cus of the UIListLayout that also sits in that instance)
 				if #TabboxButtons:GetChildren() == 2 then
 					Tab:Show();
 				end;
@@ -4427,7 +4520,9 @@ function Library:CreateWindow(...)
 			end;
 		end);
 
-		-- This was the first tab added, so we show it by default.
+		-- NOTE: We no longer auto-show the first tab here.
+		-- The HomeFrame (if CreateHomeTab was called) shows instead.
+		-- If CreateHomeTab was NOT called, the first tab added auto-shows normally.
 		if #TabContainer:GetChildren() == 1 then
 			Tab:ShowTab();
 		end;
@@ -4457,14 +4552,11 @@ function Library:CreateWindow(...)
 		local FadeTime = Config.MenuFadeTime;
 		Fading = true;
 		Toggled = (not Toggled);
-		--ModalElement.Modal = Toggled;
 
 		if Toggled then
-			-- A bit scuffed, but if we're going from not toggled -> toggled we want to show the frame immediately so that the fade is visible.
 			Outer.Visible = true;
 
 			task.spawn(function()
-				-- TODO: add cursor fade?
 				local State = InputService.MouseIconEnabled;
 
 				local Cursor = Drawing.new('Triangle');
@@ -4556,6 +4648,8 @@ function Library:CreateWindow(...)
 
 	if Config.AutoShow then task.spawn(Library.Toggle) end
 
+	-- ── Store TabContainer on Window so CreateHomeTab can access it ───────
+	Window.TabContainer = TabContainer;
 	Window.Holder = Outer;
 
 	return Window;
