@@ -3039,7 +3039,7 @@ function Library:CreateToggleButton(Text)
         Position  = UDim2.new(0, 6, 0, 0);
         Size      = UDim2.new(0, 16, 1, 0);
         Font      = Enum.Font.GothamBold;
-        Text      = '☰';
+        Text      = '📁';
         TextColor3 = Library.AccentColor;
         TextSize  = 12;
         TextXAlignment = Enum.TextXAlignment.Center;
@@ -3183,27 +3183,25 @@ function Library:CreateToggleButton(Text)
         local ObjX   = Input.Position.X - ButtonOuter.AbsolutePosition.X;
         local ObjY   = Input.Position.Y - ButtonOuter.AbsolutePosition.Y;
 
-        local moved = Input.Changed:Connect(function()
-            local dx = Input.Position.X - StartX;
-            local dy = Input.Position.Y - StartY;
+		local UIS = game:GetService('UserInputService');
+		local moved = UIS.InputChanged:Connect(function(changed)
+    	if changed.UserInputType ~= Enum.UserInputType.MouseMovement
+    	and changed.UserInputType ~= Enum.UserInputType.Touch then return end;
 
-            if math.abs(dx) > DRAG_THRESHOLD or math.abs(dy) > DRAG_THRESHOLD then
-                isDragging = true;
-            end;
+    	local dx = changed.Position.X - StartX;
+    	local dy = changed.Position.Y - StartY;
 
-            if isDragging then
-                ButtonOuter.Position = UDim2.fromOffset(
-                    Input.Position.X - ObjX,
-                    Input.Position.Y - ObjY
-                );
-            end;
-        end);
+    	if math.abs(dx) > DRAG_THRESHOLD or math.abs(dy) > DRAG_THRESHOLD then
+        isDragging = true;
+    	end;
 
-        Input.Changed:Connect(function()
-            if Input.UserInputState == Enum.UserInputState.End then
-                moved:Disconnect();
-            end;
-        end);
+    	if isDragging then
+        ButtonOuter.Position = UDim2.fromOffset(
+            changed.Position.X - ObjX,
+            changed.Position.Y - ObjY
+        );
+    	end;
+		end);
 
         -- Wait for release via InputEnded
         local releaseConn;
