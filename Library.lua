@@ -2933,6 +2933,103 @@ function Library:SetWatermark(Text)
 	Library.WatermarkText.Text = Text;
 end;
 
+function Library:CreateToggleButton(Text)
+    Text = Text or 'Menu';
+
+    local ButtonOuter = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.fromOffset(10, 10);
+        Size = UDim2.fromOffset(80, 26);
+        ZIndex = 300;
+        Parent = ScreenGui;
+    });
+
+    local ButtonInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3 = Library.AccentColor;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 301;
+        Parent = ButtonOuter;
+    });
+
+    Library:AddToRegistry(ButtonInner, {
+        BackgroundColor3 = 'MainColor';
+        BorderColor3 = 'AccentColor';
+    });
+
+    local AccentBar = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 0, 2);
+        ZIndex = 302;
+        Parent = ButtonInner;
+    });
+
+    Library:AddToRegistry(AccentBar, {
+        BackgroundColor3 = 'AccentColor';
+    });
+
+    Library:CreateLabel({
+        Size = UDim2.new(1, 0, 1, 0);
+        TextSize = 14;
+        Text = Text;
+        ZIndex = 302;
+        Parent = ButtonInner;
+    });
+
+    local IsDragging = false;
+    local DRAG_THRESHOLD = 6;
+
+    ButtonOuter.InputBegan:Connect(function(Input)
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1
+            and Input.UserInputType ~= Enum.UserInputType.Touch then
+            return;
+        end;
+
+        IsDragging = false;
+
+        local StartX = Mouse.X;
+        local StartY = Mouse.Y;
+        local ObjX = Mouse.X - ButtonOuter.AbsolutePosition.X;
+        local ObjY = Mouse.Y - ButtonOuter.AbsolutePosition.Y;
+
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+            local dx = Mouse.X - StartX;
+            local dy = Mouse.Y - StartY;
+
+            if math.abs(dx) > DRAG_THRESHOLD or math.abs(dy) > DRAG_THRESHOLD then
+                IsDragging = true;
+            end;
+
+            if IsDragging then
+                ButtonOuter.Position = UDim2.fromOffset(
+                    Mouse.X - ObjX,
+                    Mouse.Y - ObjY
+                );
+            end;
+
+            RenderStepped:Wait();
+        end;
+
+        if not IsDragging then
+            task.spawn(Library.Toggle);
+        end;
+
+        IsDragging = false;
+    end);
+
+    -- Mobile tap support (TouchTap only fires when there's no significant movement)
+    ButtonOuter.TouchTap:Connect(function()
+        if not IsDragging then
+            task.spawn(Library.Toggle);
+        end;
+    end);
+
+    return ButtonOuter;
+end;
+
 function Library:Notify(Text, Time)
 	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
 
