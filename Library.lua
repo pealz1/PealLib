@@ -3072,7 +3072,7 @@ function Library:CreateToggleButton(Text)
         Position  = UDim2.new(0, 28, 0, 0);
         Size      = UDim2.new(1, -32, 1, 0);
         Font      = Library.Font or Enum.Font.Gotham;
-        Text      = 'Close';
+        Text = 'Close';
         TextColor3 = Library.FontColor or Color3.fromRGB(240, 240, 240);
         TextSize  = 12;
         TextXAlignment = Enum.TextXAlignment.Left;
@@ -3158,11 +3158,11 @@ function Library:CreateToggleButton(Text)
     end);
 
     -- ── Drag + click ────────────────────────────────────────────────
+local isOpen = true;  -- GUI starts visible
 local function doToggle()
     task.spawn(function() Library:Toggle() end);
-    task.defer(function()
-        TextLabel.Text = Library.Toggled and 'Open' or 'Close';
-    end);
+    isOpen = not isOpen;
+    TextLabel.Text = isOpen and 'Close' or 'Open';
 end;
     local DRAG_THRESHOLD = 6;
 
