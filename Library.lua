@@ -3546,6 +3546,20 @@ function Library:CreateHomeTab(Window, Info)
 
 	Library:GiveSignal(RunService.Heartbeat:Connect(function()
 		local Now = tick();
+local LastFpsTime = tick();
+	local FpsCount = 0;
+	local CurrentFps = 0;
+
+	Library:GiveSignal(RunService.Heartbeat:Connect(function(Delta)
+		local Now = tick();
+
+		-- FPS via frame counting, not :Wait()
+		FpsCount = FpsCount + 1;
+		if Now - LastFpsTime >= 1 then
+			CurrentFps = FpsCount;
+			FpsCount = 0;
+			LastFpsTime = Now;
+		end;
 
 		-- Uptime
 		local Elapsed = math.floor(Now - StartTime);
@@ -3563,18 +3577,18 @@ function Library:CreateHomeTab(Window, Info)
 		end;
 
 		pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
+		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. CurrentFps) end);
 
-		-- FPS
-		local FPS = math.floor(1 / RunService.Heartbeat:Wait());
-		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. FPS) end);
-
-		-- Ping
+		-- Ping (safe)
 		pcall(function()
-			local Ping = Players.LocalPlayer:GetNetworkPing and math.floor(Players.LocalPlayer:GetNetworkPing() * 1000) or '?';
-			PingLabel:SetText('📶  Ping:  ' .. Ping .. 'ms');
+			local lp = Players.LocalPlayer;
+			if lp and typeof(lp.GetNetworkPing) == 'function' then
+				local Ping = math.floor(lp:GetNetworkPing() * 1000);
+				PingLabel:SetText('📶  Ping:  ' .. Ping .. 'ms');
+			end;
 		end);
 
-		-- Player count (updates when players join/leave)
+		-- Player count
 		pcall(function()
 			ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
 		end);
