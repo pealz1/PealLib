@@ -3158,6 +3158,12 @@ function Library:CreateToggleButton(Text)
     end);
 
     -- ── Drag + click ────────────────────────────────────────────────
+	local function doToggle()
+    task.spawn(Library.Toggle);
+    task.defer(function()
+        TextLabel.Text = Library.Toggled and 'Close' or 'Open';
+    end);
+end;
     local DRAG_THRESHOLD = 6;
 
     ButtonOuter.InputBegan:Connect(function(Input)
@@ -3237,7 +3243,7 @@ function Library:CreateToggleButton(Text)
                     }):Play();
                 end);
 
-                task.spawn(Library.Toggle);
+                doToggle();
             end;
 
             isDragging = false;
@@ -3248,7 +3254,7 @@ function Library:CreateToggleButton(Text)
     ButtonOuter.TouchTap:Connect(function()
         if not isDragging then
             pcall(function() ClickSound:Play() end);
-            task.spawn(Library.Toggle);
+            doToggle();
         end;
     end);
 
