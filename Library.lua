@@ -2770,6 +2770,23 @@ do
 	end;
 end;
 
+-- < Create other UI elements >
+do
+	Library.NotificationArea = Library:Create('Frame', {
+		BackgroundTransparency = 1;
+		Position = UDim2.new(0, 0, 0, 40);
+		Size = UDim2.new(0, 300, 0, 200);
+		ZIndex = 100;
+		Parent = ScreenGui;
+	});
+
+	Library:Create('UIListLayout', {
+		Padding = UDim.new(0, 4);
+		FillDirection = Enum.FillDirection.Vertical;
+		SortOrder = Enum.SortOrder.LayoutOrder;
+		Parent = Library.NotificationArea;
+	});
+
 -- ── Watermark (styled to match CreateToggleButton) ───────────────────────
 local WatermarkOuter = Library:Create('Frame', {
 	BackgroundColor3 = Library.OutlineColor;
