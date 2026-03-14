@@ -177,7 +177,14 @@ function Library:MakeDraggable(Instance, Cutoff)
 				return;
 			end;
 
-			while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+			local dragging = true;
+			local conn = Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then
+					dragging = false;
+				end;
+			end);
+
+			while dragging do
 				Instance.Position = UDim2.new(
 					0,
 					Mouse.X - ObjPos.X + (Instance.AbsoluteSize.X * Instance.AnchorPoint.X),
@@ -187,6 +194,8 @@ function Library:MakeDraggable(Instance, Cutoff)
 
 				RenderStepped:Wait();
 			end;
+
+			conn:Disconnect();
 		end;
 	end)
 end;
@@ -884,7 +893,14 @@ do
 
 		SatVibMap.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+				local dragging = true;
+				local conn = Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						dragging = false;
+					end;
+				end);
+
+				while dragging do
 					local MinX = SatVibMap.AbsolutePosition.X;
 					local MaxX = MinX + SatVibMap.AbsoluteSize.X;
 					local MouseX = math.clamp(Mouse.X, MinX, MaxX);
@@ -900,13 +916,21 @@ do
 					RenderStepped:Wait();
 				end;
 
+				conn:Disconnect();
 				Library:AttemptSave();
 			end;
 		end);
 
 		HueSelectorInner.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+				local dragging = true;
+				local conn = Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						dragging = false;
+					end;
+				end);
+
+				while dragging do
 					local MinY = HueSelectorInner.AbsolutePosition.Y;
 					local MaxY = MinY + HueSelectorInner.AbsoluteSize.Y;
 					local MouseY = math.clamp(Mouse.Y, MinY, MaxY);
@@ -917,6 +941,7 @@ do
 					RenderStepped:Wait();
 				end;
 
+				conn:Disconnect();
 				Library:AttemptSave();
 			end;
 		end);
@@ -937,7 +962,14 @@ do
 		if TransparencyBoxInner then
 			TransparencyBoxInner.InputBegan:Connect(function(Input)
 				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-					while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+					local dragging = true;
+					local conn = Input.Changed:Connect(function()
+						if Input.UserInputState == Enum.UserInputState.End then
+							dragging = false;
+						end;
+					end);
+
+					while dragging do
 						local MinX = TransparencyBoxInner.AbsolutePosition.X;
 						local MaxX = MinX + TransparencyBoxInner.AbsoluteSize.X;
 						local MouseX = math.clamp(Mouse.X, MinX, MaxX);
@@ -949,6 +981,7 @@ do
 						RenderStepped:Wait();
 					end;
 
+					conn:Disconnect();
 					Library:AttemptSave();
 				end;
 			end);
@@ -1216,8 +1249,14 @@ do
 
 		local Picking = false;
 
+		PickOuter.TouchTap:Connect(function()
+			if not Library:MouseIsOverOpenedFrame() then
+				PickOuter.InputBegan:Fire({UserInputType = Enum.UserInputType.MouseButton1, UserInputState = Enum.UserInputState.Begin});
+			end;
+		end);
+
 		PickOuter.InputBegan:Connect(function(Input)
-			if (Input.UserInputType == Enum.UserInputType.MouseButton1) and not Library:MouseIsOverOpenedFrame() then
+			if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
 				Picking = true;
 
 				DisplayLabel.Text = '';
@@ -1292,11 +1331,12 @@ do
 				KeyPicker:Update();
 			end;
 
-			if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				local AbsPos, AbsSize = ModeSelectOuter.AbsolutePosition, ModeSelectOuter.AbsoluteSize;
+				local px = Input.Position.X; local py = Input.Position.Y;
 
-				if Mouse.X < AbsPos.X or Mouse.X > AbsPos.X + AbsSize.X
-					or Mouse.Y < (AbsPos.Y - 20 - 1) or Mouse.Y > AbsPos.Y + AbsSize.Y then
+				if px < AbsPos.X or px > AbsPos.X + AbsSize.X
+					or py < (AbsPos.Y - 20 - 1) or py > AbsPos.Y + AbsSize.Y then
 
 					ModeSelectOuter.Visible = false;
 				end;
@@ -2171,7 +2211,14 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 				local gPos = Fill.Size.X.Offset;
 				local Diff = mPos - (Fill.AbsolutePosition.X + gPos);
 
-				while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+				local dragging = true;
+				local conn = Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						dragging = false;
+					end;
+				end);
+
+				while dragging do
 					local nMPos = Mouse.X;
 					local nX = math.clamp(gPos + (nMPos - mPos) + Diff, 0, Slider.MaxSize);
 
@@ -2188,6 +2235,8 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 					RenderStepped:Wait();
 				end;
+
+				conn:Disconnect();
 
 				Library:AttemptSave();
 			end;
@@ -3009,6 +3058,18 @@ WatermarkOuter.MouseLeave:Connect(function()
 	}):Play();
 end);
 
+WatermarkOuter.TouchTap:Connect(function()
+	pcall(function() WmHoverSound:Play() end);
+	TweenService:Create(WatermarkInner, wmFastTween, { BackgroundColor3 = WmLighten(Library.MainColor, 0.05) }):Play();
+	TweenService:Create(WatermarkAccentBar, wmFastTween, { Size = UDim2.new(1, 0, 0, 3) }):Play();
+	TweenService:Create(WatermarkScale, wmFastTween, { Scale = 1.04 }):Play();
+	task.delay(0.25, function()
+		TweenService:Create(WatermarkInner, wmFastTween, { BackgroundColor3 = Library.MainColor }):Play();
+		TweenService:Create(WatermarkAccentBar, wmFastTween, { Size = UDim2.new(1, 0, 0, 2) }):Play();
+		TweenService:Create(WatermarkScale, wmBounceTween, { Scale = 1 }):Play();
+	end);
+end);
+
 task.spawn(function()
 	local pulseTween = TweenInfo.new(0.85, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true);
 	TweenService:Create(LiveDotGlow, pulseTween, {
@@ -3230,20 +3291,18 @@ function Library:CreatePopout(Config)
 		TextSize   = 15;
 		Font       = Enum.Font.GothamBold;
 		ZIndex     = 56;
-		Visible    = false;
+		Visible    = true;
 		Parent     = _PopCloseBtn;
 	});
 
 	_PopCloseBtn.MouseEnter:Connect(function()
-		_PopCloseIcon.Visible = true;
 		TweenService:Create(_PopCloseBtn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(255, 115, 105) }):Play();
 	end);
 	_PopCloseBtn.MouseLeave:Connect(function()
-		_PopCloseIcon.Visible = false;
 		TweenService:Create(_PopCloseBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 95, 87) }):Play();
 	end);
 	_PopCloseBtn.InputBegan:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 			Popout:Hide();
 		end;
 	end);
@@ -4425,24 +4484,22 @@ local WinMinIcon = Library:Create('TextLabel', {
 	TextSize   = 15;
 	Font       = Enum.Font.GothamBold;
 	ZIndex     = 11;
-	Visible    = false;
+	Visible    = true;
 	Parent     = WinMinBtn;
 });
 
 WinMinBtn.MouseEnter:Connect(function()
-	WinMinIcon.Visible = true;
 	TweenService:Create(WinMinBtn, TweenInfo.new(0.1), {
 		BackgroundColor3 = Color3.fromRGB(255, 210, 100);
 	}):Play();
 end);
 WinMinBtn.MouseLeave:Connect(function()
-	WinMinIcon.Visible = false;
 	TweenService:Create(WinMinBtn, TweenInfo.new(0.12), {
 		BackgroundColor3 = Color3.fromRGB(255, 189, 68);
 	}):Play();
 end);
 WinMinBtn.InputBegan:Connect(function(Input)
-	if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 		task.spawn(Library.Toggle);
 	end;
 end);
@@ -4468,24 +4525,22 @@ local WinCloseIcon = Library:Create('TextLabel', {
 	TextSize   = 16;
 	Font       = Enum.Font.GothamBold;
 	ZIndex     = 11;
-	Visible    = false;
+	Visible    = true;
 	Parent     = WinCloseBtn;
 });
 
 WinCloseBtn.MouseEnter:Connect(function()
-	WinCloseIcon.Visible = true;
 	TweenService:Create(WinCloseBtn, TweenInfo.new(0.1), {
 		BackgroundColor3 = Color3.fromRGB(255, 115, 105);
 	}):Play();
 end);
 WinCloseBtn.MouseLeave:Connect(function()
-	WinCloseIcon.Visible = false;
 	TweenService:Create(WinCloseBtn, TweenInfo.new(0.12), {
 		BackgroundColor3 = Color3.fromRGB(255, 95, 87);
 	}):Play();
 end);
 WinCloseBtn.InputBegan:Connect(function(Input)
-	if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 		Library:Unload();
 	end;
 end);
@@ -4644,6 +4699,15 @@ end);
 				TextColor3 = Library.FontColor;
 			}):Play();
 			Library.RegistryMap[TabButtonLabel].Properties.TextColor3 = 'FontColor';
+		end);
+
+		TabButton.TouchTap:Connect(function()
+			if Blocker.BackgroundTransparency == 0 then return end;
+			pcall(function() TabHoverSound:Play() end);
+			TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.AccentColor }):Play();
+			task.delay(0.2, function()
+				TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.FontColor }):Play();
+			end);
 		end);
 
 		local TabFrame = Library:Create('ScrollingFrame', {
