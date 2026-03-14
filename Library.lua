@@ -1412,7 +1412,7 @@ do
 		local Groupbox = self;
 		local Container = Groupbox.Container;
 
-		local function CreateBaseButton(Button)
+local function CreateBaseButton(Button)
 			local Outer = Library:Create('Frame', {
 				Active = true;
 				BackgroundColor3 = Color3.new(0, 0, 0);
@@ -1447,32 +1447,31 @@ do
 				Parent = Inner;
 			});
 
-Library:AddToRegistry(Outer, {
-	BorderColor3 = 'Black';
-});
+			Library:AddToRegistry(Outer, {
+				BorderColor3 = 'Black';
+			});
 
-Library:AddToRegistry(Inner, {
-	BackgroundColor3 = 'MainColor';
-	BorderColor3 = 'OutlineColor';
-});
+			Library:AddToRegistry(Inner, {
+				BackgroundColor3 = 'MainColor';
+				BorderColor3 = 'OutlineColor';
+			});
 
-Library:OnHighlight(Outer, Outer,
-	{ BorderColor3 = 'AccentColor' },
-	{ BorderColor3 = 'Black' }
-);
+			Library:OnHighlight(Outer, Outer,
+				{ BorderColor3 = 'AccentColor' },
+				{ BorderColor3 = 'Black' }
+			);
 
--- UIScale lets InitEvents animate a press squeeze
-local _BtnScale = Instance.new('UIScale');
-_BtnScale.Scale  = 1;
-_BtnScale.Parent = Outer;
+			local _BtnScale = Instance.new('UIScale');
+			_BtnScale.Scale  = 1;
+			_BtnScale.Parent = Outer;
 
-return Outer, Inner, Label
+			return Outer, Inner, Label;
+		end;
 
 		local function InitEvents(Button)
 			local function WaitForEvent(event, timeout, validator)
 				local bindable = Instance.new('BindableEvent')
 				local connection = event:Once(function(...)
-
 					if type(validator) == 'function' and validator(...) then
 						bindable:Fire(true)
 					else
@@ -1490,83 +1489,69 @@ return Outer, Inner, Label
 				if Library:MouseIsOverOpenedFrame() then
 					return false
 				end
-
 				if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
 					return false
 				end
-
 				return true
 			end
 
-Button.Outer.InputBegan:Connect(function(Input)
-	if not ValidateClick(Input) then return end
-	if Button.Locked then return end
+			Button.Outer.InputBegan:Connect(function(Input)
+				if not ValidateClick(Input) then return end
+				if Button.Locked then return end
 
-	-- Press squeeze
-	local _sc = Button.Outer:FindFirstChildWhichIsA('UIScale');
-	if _sc then
-		TweenService:Create(_sc, TweenInfo.new(0.06, Enum.EasingStyle.Quad), { Scale = 0.95 }):Play();
-		task.delay(0.08, function()
-			TweenService:Create(_sc, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
-		end);
-	end;
+				local _sc = Button.Outer:FindFirstChildWhichIsA('UIScale');
+				if _sc then
+					TweenService:Create(_sc, TweenInfo.new(0.06, Enum.EasingStyle.Quad), { Scale = 0.95 }):Play();
+					task.delay(0.08, function()
+						TweenService:Create(_sc, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
+					end);
+				end;
 
-	if Button.DoubleClick then
+				if Button.DoubleClick then
 					Library:RemoveFromRegistry(Button.Label)
 					Library:AddToRegistry(Button.Label, { TextColor3 = 'AccentColor' })
-
 					Button.Label.TextColor3 = Library.AccentColor
 					Button.Label.Text = 'Are you sure?'
 					Button.Locked = true
-
 					local clicked = WaitForEvent(Button.Outer.InputBegan, 0.5, ValidateClick)
-
 					Library:RemoveFromRegistry(Button.Label)
 					Library:AddToRegistry(Button.Label, { TextColor3 = 'FontColor' })
-
 					Button.Label.TextColor3 = Library.FontColor
 					Button.Label.Text = Button.Text
 					task.defer(rawset, Button, 'Locked', false)
-
 					if clicked then
 						Library:SafeCallback(Button.Func)
 					end
-
 					return
 				end
 
 				Library:SafeCallback(Button.Func);
 			end)
+
 			Button.Outer.TouchTap:Connect(function()
 				if Button.Locked then return end
 
 				if Button.DoubleClick then
 					Library:RemoveFromRegistry(Button.Label)
 					Library:AddToRegistry(Button.Label, { TextColor3 = 'AccentColor' })
-
 					Button.Label.TextColor3 = Library.AccentColor
 					Button.Label.Text = 'Are you sure?'
 					Button.Locked = true
-
 					local clicked = WaitForEvent(Button.Outer.InputBegan, 0.5, ValidateClick)
-
 					Library:RemoveFromRegistry(Button.Label)
 					Library:AddToRegistry(Button.Label, { TextColor3 = 'FontColor' })
-
 					Button.Label.TextColor3 = Library.FontColor
 					Button.Label.Text = Button.Text
 					task.defer(rawset, Button, 'Locked', false)
-
 					if clicked then
 						Library:SafeCallback(Button.Func)
 					end
-
 					return
 				end
 
 				Library:SafeCallback(Button.Func);
 			end)
-		end
+		end;
 
 		Button.Outer, Button.Inner, Button.Label = CreateBaseButton(Button)
 		Button.Outer.Parent = Container
@@ -4289,6 +4274,7 @@ task.spawn(function()
 	task.wait(0.3);
 	NotifyOuter:Destroy();
 end);
+end;
 
 function Library:CreateWindow(...)
 	local Arguments = { ... }
