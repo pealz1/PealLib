@@ -9,6 +9,8 @@ local RenderStepped = RunService.RenderStepped;
 local LocalPlayer = Players.LocalPlayer;
 local Mouse = LocalPlayer:GetMouse();
 
+local Toggled = false;
+
 local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 
 local ScreenGui = Instance.new('ScreenGui');
@@ -3738,18 +3740,16 @@ function Library:CreateToggleButton(Text)
         }):Play();
     end);
 
-local isOpen = true;
-
 -- Keep this button's label in sync when the minus button (or keybind) toggles the window
 Library._onToggleChanged = function(state)
 	isOpen = state;
-	TextLabel.Text = isOpen and 'Close UI' or 'Open UI';
+	TextLabel.Text = Toggled and 'Close UI' or 'Open UI';
 end;
 
 local function doToggle()
 	task.spawn(function() Library:Toggle() end);
 	isOpen = not isOpen;
-	TextLabel.Text = isOpen and 'Close UI' or 'Open UI';
+	TextLabel.Text = Toggled and 'Close UI' or 'Open UI';
 end;
     local DRAG_THRESHOLD = 6;
 
@@ -5103,7 +5103,7 @@ end);
 	});
 
 local TransparencyCache = {};
-local Toggled = false;
+-- Toggled boolean moved to start of script
 local Fading = false;
 
 function Library:Toggle()
@@ -5140,15 +5140,15 @@ function Library:Toggle()
 				while Toggled and ScreenGui.Parent do
 					InputService.MouseIconEnabled = false;
 
-Cursor.Color = Library.AccentColor;
-
-Cursor.PointA = Vector2.new(Mouse.X, Mouse.Y);
-Cursor.PointB = Vector2.new(Mouse.X + 16, Mouse.Y + 6);
-Cursor.PointC = Vector2.new(Mouse.X + 6, Mouse.Y + 16);
-
-CursorOutline.PointA = Cursor.PointA;
-CursorOutline.PointB = Cursor.PointB;
-CursorOutline.PointC = Cursor.PointC;
+					Cursor.Color = Library.AccentColor;
+					
+					Cursor.PointA = Vector2.new(Mouse.X, Mouse.Y);
+					Cursor.PointB = Vector2.new(Mouse.X + 16, Mouse.Y + 6);
+					Cursor.PointC = Vector2.new(Mouse.X + 6, Mouse.Y + 16);
+					
+					CursorOutline.PointA = Cursor.PointA;
+					CursorOutline.PointB = Cursor.PointB;
+					CursorOutline.PointC = Cursor.PointC;
 
 					RenderStepped:Wait();
 				end;
