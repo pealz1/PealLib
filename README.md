@@ -1,7 +1,7 @@
-# LinoriaLib
-A Roblox UI library inspired by Splix, BBot and many others.
+# Peal Library
+A Roblox UI library inspired by Matcha (external exploit) & Linoria
 
-Used in the Linoria script hub: https://kyaru.cloud
+Used in the Romazhub script: https://discord.gg/zSuZN5e6MZ
 
 ###### Example Script: 
 * [Example](Example.lua)
@@ -19,7 +19,6 @@ Used in the Linoria script hub: https://kyaru.cloud
 <img src="https://i.imgur.com/qs0Hqc6.png" />
 
 ## Contributors
-- Inori: Main developer.
-- Wally: Cleaning up verbose code, extending library functionality.
-- Stefanuk: Extending library functionality.
-- matas3535: Creator of Splix.
+- Pealz: Main developer.
+- Mental: Helping with bug fixes, adding small features
+- Inori: Original Creator (linoria).
