@@ -110,18 +110,6 @@ function KeySystem:Authenticate(options)
     Library:Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DialogOuter })
     Library:AddToRegistry(DialogOuter, { BackgroundColor3 = "OutlineColor" })
 
-    -- Shadow
-    local Shadow = Library:Create("Frame", {
-        BackgroundColor3       = Color3.new(0, 0, 0),
-        BackgroundTransparency = 0.55,
-        BorderSizePixel        = 0,
-        Position               = UDim2.new(0, -2, 0, 3),
-        Size                   = UDim2.new(1, 4, 1, 4),
-        ZIndex                 = 200,
-        Parent                 = DialogOuter,
-    })
-    Library:Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = Shadow })
-
     -- Inner panel
     local Dialog = Library:Create("Frame", {
         BackgroundColor3 = Library.MainColor,
