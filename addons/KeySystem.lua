@@ -1,10 +1,10 @@
--- KeySystem.lua  -  LinoriaLib-Mobile addon
+-- KeySystem.lua  -  PealLib addon
 -- Flow:
---   1. Check if a saved key exists → validate it → if valid, skip GUI entirely
---   2. If no valid saved key → show GUI
+--   1. Check if a saved key exists -> validate it -> if valid, skip GUI entirely
+--   2. If no valid saved key -> show GUI
 --   3. GUI: "Get Key" opens the Junkie checkpoint link in browser
 --   4. User completes steps, gets a key, pastes it into the input box
---   5. "Continue" validates the key → if valid, saves it and lets user in
+--   5. "Continue" validates the key -> if valid, saves it and lets user in
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -16,7 +16,7 @@ function KeySystem:SetLibrary(lib)
     self.Library = lib
 end
 
--- ── File helpers ────────────────────────────────────────────────────────
+-- File helpers
 local KEY_FILE = "romazdev_key.txt"
 
 local function fsOk()
@@ -39,55 +39,95 @@ local function deleteSavedKey()
     if fsOk() then pcall(delfile, KEY_FILE) end
 end
 
--- ── Open URL helper (tries executor openurl, falls back to clipboard) ───
 local function openLink(url)
-    -- Try direct browser open (supported by most modern executors)
     if openurl then
         pcall(openurl, url)
         return true
     end
-    -- Fallback: copy to clipboard
     if setclipboard then
         setclipboard(url)
     end
     return false
 end
 
--- ── Authenticate ─────────────────────────────────────────────────────────
 function KeySystem:Authenticate(options)
     options = options or {}
 
     local Library = self.Library
     assert(Library, "[KeySystem] call SetLibrary(lib) before Authenticate()")
 
-    -- Load and configure Junkie SDK
     local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
     Junkie.script_key = options.ScriptKey or options.Identifier or ""
     Junkie.service    = options.Service    or "SCRIPT"
     Junkie.identifier = options.Identifier or ""
     Junkie.provider   = options.Provider   or "Romazhub"
 
-    -- ── Step 1: check saved / cached key silently ─────────────────────────
+    local MAX_RETRIES = 3
+    local RETRY_DELAY = 1
+
+    local function tryCheckKey(key, retries)
+        retries = retries or MAX_RETRIES
+        local ok, result
+        for attempt = 1, retries do
+            ok, result = pcall(Junkie.check_key, key)
+            if ok then break end
+            if attempt < retries then
+                task.wait(RETRY_DELAY)
+            end
+        end
+        return ok, result
+    end
+
+    local function isAlreadyRedeemedHere(result)
+        if not result then return false end
+        local msg = result.message or result.error or ""
+        return msg == "KEY_ALREADY_USED"
+            or msg == "KEY_ALREADY_REDEEMED"
+            or msg:find("already") ~= nil
+    end
+
+    local function isDefinitivelyInvalid(result)
+        if not result then return false end
+        local msg = result.message or result.error or ""
+        return msg == "KEY_EXPIRED"
+            or msg == "INVALID_KEY"
+            or msg == "KEY_NOT_FOUND"
+            or msg == "HWID_MISMATCH"
+            or msg == "SERVICE_MISMATCH"
+            or msg == "HWID_BANNED"
+    end
+
     local cached = loadSavedKey() or getgenv().SCRIPT_KEY
     if cached then
-        local ok, result = pcall(Junkie.check_key, cached)
+        local ok, result = tryCheckKey(cached)
+
         if ok and result and result.valid then
             getgenv().SCRIPT_KEY = cached
-            return cached   -- already validated, skip GUI entirely
+            return cached
+
+        elseif ok and isAlreadyRedeemedHere(result) then
+            getgenv().SCRIPT_KEY = cached
+            saveKey(cached)
+            return cached
+
+        elseif not ok then
+            getgenv().SCRIPT_KEY = nil
+
+        elseif ok and isDefinitivelyInvalid(result) then
+            deleteSavedKey()
+            getgenv().SCRIPT_KEY = nil
+
         else
-            deleteSavedKey()   -- saved key is expired/invalid, remove it
             getgenv().SCRIPT_KEY = nil
         end
     end
 
-    -- ── Step 2: no valid key → build GUI ─────────────────────────────────
     local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
     local vp       = workspace.CurrentCamera.ViewportSize
     local DW       = isMobile and math.min(320, math.floor(vp.X * 0.88)) or 390
     local DH       = 210
     local PAD      = 10
 
-    -- Backdrop
     local Backdrop = Library:Create("Frame", {
         BackgroundColor3       = Color3.new(0, 0, 0),
         BackgroundTransparency = 0.5,
@@ -97,7 +137,6 @@ function KeySystem:Authenticate(options)
         Parent                 = Library.ScreenGui,
     })
 
-    -- Outer border
     local DialogOuter = Library:Create("Frame", {
         AnchorPoint      = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Library.OutlineColor,
@@ -110,7 +149,6 @@ function KeySystem:Authenticate(options)
     Library:Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = DialogOuter })
     Library:AddToRegistry(DialogOuter, { BackgroundColor3 = "OutlineColor" })
 
-    -- Inner panel
     local Dialog = Library:Create("Frame", {
         BackgroundColor3 = Library.MainColor,
         BorderSizePixel  = 0,
@@ -122,7 +160,6 @@ function KeySystem:Authenticate(options)
     Library:Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = Dialog })
     Library:AddToRegistry(Dialog, { BackgroundColor3 = "MainColor" })
 
-    -- Accent bar top
     local AccentBar = Library:Create("Frame", {
         BackgroundColor3 = Library.AccentColor,
         BorderSizePixel  = 0,
@@ -133,7 +170,6 @@ function KeySystem:Authenticate(options)
     Library:Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = AccentBar })
     Library:AddToRegistry(AccentBar, { BackgroundColor3 = "AccentColor" })
 
-    -- Title
     Library:CreateLabel({
         Position       = UDim2.new(0, PAD, 0, 6),
         Size           = UDim2.new(1, -PAD * 2, 0, 18),
@@ -144,7 +180,6 @@ function KeySystem:Authenticate(options)
         Parent         = Dialog,
     })
 
-    -- Divider
     Library:Create("Frame", {
         BackgroundColor3       = Library.OutlineColor,
         BackgroundTransparency = 0.4,
@@ -155,7 +190,6 @@ function KeySystem:Authenticate(options)
         Parent                 = Dialog,
     })
 
-    -- Subtitle
     Library:CreateLabel({
         Position       = UDim2.new(0, PAD, 0, 31),
         Size           = UDim2.new(1, -PAD * 2, 0, 14),
@@ -166,7 +200,6 @@ function KeySystem:Authenticate(options)
         Parent         = Dialog,
     })
 
-    -- ── Key input box ─────────────────────────────────────────────────────
     local InputOuter = Library:Create("Frame", {
         BackgroundColor3 = Library.OutlineColor,
         BorderSizePixel  = 0,
@@ -207,18 +240,20 @@ function KeySystem:Authenticate(options)
     })
     Library:AddToRegistry(KeyInput, { TextColor3 = "FontColor" })
 
-    -- ── Status label ──────────────────────────────────────────────────────
+    if cached and cached ~= "" then
+        KeyInput.Text = cached
+    end
+
     local StatusLabel = Library:CreateLabel({
         Position       = UDim2.new(0, PAD, 0, 90),
         Size           = UDim2.new(1, -PAD * 2, 0, 14),
-        Text           = "Click 'Get Key' to open the key link in your browser.",
+        Text           = "Click Get Key to open the key link in your browser.",
         TextSize       = 10,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex         = 204,
         Parent         = Dialog,
     })
 
-    -- ── Buttons ───────────────────────────────────────────────────────────
     local BTNW  = math.floor((DW - 2 - PAD * 3) / 2)
     local BTNH  = 28
     local BTN_Y = 110
@@ -267,10 +302,9 @@ function KeySystem:Authenticate(options)
         return Btn
     end
 
-    local GetKeyBtn  = makeButton("Get Key",  PAD,              false)
+    local GetKeyBtn   = makeButton("Get Key",  PAD,              false)
     local ContinueBtn = makeButton("Continue", PAD + BTNW + PAD, true)
 
-    -- Accent bottom bar
     Library:Create("Frame", {
         AnchorPoint            = Vector2.new(0, 1),
         BackgroundColor3       = Library.AccentColor,
@@ -282,10 +316,8 @@ function KeySystem:Authenticate(options)
         Parent                 = Dialog,
     })
 
-    -- Draggable
     Library:MakeDraggable(DialogOuter, 28)
 
-    -- Entrance tween
     local Scale = Instance.new("UIScale")
     Scale.Scale  = 0.9
     Scale.Parent = DialogOuter
@@ -294,7 +326,6 @@ function KeySystem:Authenticate(options)
         { Scale = 1 }
     ):Play()
 
-    -- ── Colours ───────────────────────────────────────────────────────────
     local ErrColor  = Library.RiskColor or Color3.fromRGB(255, 60, 60)
     local OkColor   = Library.AccentColor
     local InfoColor = Library.FontColor
@@ -319,7 +350,6 @@ function KeySystem:Authenticate(options)
         end)
     end
 
-    -- ── Get Key button: opens the Junkie checkpoint link ──────────────────
     GetKeyBtn.MouseButton1Click:Connect(function()
         local ok, link = pcall(Junkie.get_key_link)
         if ok and link and link ~= "" then
@@ -334,21 +364,20 @@ function KeySystem:Authenticate(options)
         end
     end)
 
-    -- ── Continue button: validate the entered key ─────────────────────────
     local function doVerify()
         if verifying then return end
-        local key = KeyInput.Text:match("^%s*(.-)%s*$")   -- trim whitespace
+        local key = KeyInput.Text:match("^%s*(.-)\%s*$")
         if key == "" then
             setStatus("Please paste your key first.", ErrColor)
             return
         end
 
-        verifying          = true
-        ContinueBtn.Text   = "Checking..."
+        verifying        = true
+        ContinueBtn.Text = "Checking..."
         setStatus("Validating key...", InfoColor)
 
         task.spawn(function()
-            local ok, result = pcall(Junkie.check_key, key)
+            local ok, result = tryCheckKey(key)
 
             if ok and result and result.valid then
                 saveKey(key)
@@ -356,36 +385,54 @@ function KeySystem:Authenticate(options)
                 setStatus("Key accepted! Loading script...", OkColor)
                 task.wait(0.7)
                 closeDialog()
-            else
-                local msg = (result and result.message) or "Invalid key"
+                return
+            end
 
-                -- Handle specific Junkie error codes
-                if msg == "KEY_EXPIRED" then
-                    setStatus("Key expired — get a new one.", ErrColor)
-                    deleteSavedKey()
-                elseif msg == "HWID_BANNED" then
-                    setStatus("You are hardware banned.", ErrColor)
-                    task.wait(1)
-                    game.Players.LocalPlayer:Kick("Hardware banned.")
-                    return
-                elseif msg == "HWID_MISMATCH" then
-                    setStatus("Key is linked to a different device.", ErrColor)
-                elseif msg == "SERVICE_MISMATCH" then
-                    setStatus("Key is for a different script.", ErrColor)
-                else
-                    setStatus("Invalid key. Try again.", ErrColor)
-                end
+            if ok and isAlreadyRedeemedHere(result) then
+                saveKey(key)
+                getgenv().SCRIPT_KEY = key
+                setStatus("Key recognised (already linked). Loading...", OkColor)
+                task.wait(0.7)
+                closeDialog()
+                return
+            end
 
+            if not ok then
+                setStatus("Network error -- check your connection and retry.", ErrColor)
                 ContinueBtn.Text = "Continue"
                 verifying        = false
+                return
             end
+
+            local msg = (result and (result.message or result.error)) or "Invalid key"
+
+            if msg == "KEY_EXPIRED" then
+                setStatus("Key expired -- get a new one.", ErrColor)
+                deleteSavedKey()
+            elseif msg == "HWID_BANNED" then
+                setStatus("You are hardware banned.", ErrColor)
+                task.wait(1)
+                game.Players.LocalPlayer:Kick("Hardware banned.")
+                return
+            elseif msg == "HWID_MISMATCH" then
+                setStatus("Key is linked to a different device.", ErrColor)
+            elseif msg == "SERVICE_MISMATCH" then
+                setStatus("Key is for a different script.", ErrColor)
+            elseif msg == "INVALID_KEY" or msg == "KEY_NOT_FOUND" then
+                setStatus("Invalid key. Double-check and try again.", ErrColor)
+                deleteSavedKey()
+            else
+                setStatus("Validation failed: " .. tostring(msg), ErrColor)
+            end
+
+            ContinueBtn.Text = "Continue"
+            verifying        = false
         end)
     end
 
     ContinueBtn.MouseButton1Click:Connect(doVerify)
     KeyInput.FocusLost:Connect(function(enter) if enter then doVerify() end end)
 
-    -- Block until dialog closes
     while not closed do
         task.wait(0.05)
     end
