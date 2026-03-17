@@ -10,6 +10,19 @@ local LocalPlayer = Players.LocalPlayer;
 local Mouse = LocalPlayer:GetMouse();
 
 local Toggled = false;
+local _lastTouchX, _lastTouchY = 0, 0;
+
+-- Track touch position globally so GetMousePosition always has a fresh value
+InputService.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
+	end;
+end);
+InputService.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
+	end;
+end);
 
 local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 
@@ -187,8 +200,8 @@ function Library:MakeDraggable(Instance, Cutoff)
 				end;
 			end);
 
-			local endConn = Input.Changed:Connect(function()
-				if Input.UserInputState == Enum.UserInputState.End then
+			local endConn = InputService.InputEnded:Connect(function(endInput)
+				if endInput == Input then
 					dragging = false;
 				end;
 			end);
@@ -297,14 +310,13 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 end;
 
 function Library:GetMousePosition()
-	local TouchPos = InputService:GetLastInputType() == Enum.UserInputType.Touch
-	if TouchPos then
-		local touchPositions = InputService:GetTouchPositions()
-		if touchPositions and #touchPositions > 0 then
-			return touchPositions[1].X, touchPositions[1].Y
-		end
-	end
-	return Mouse.X, Mouse.Y
+	local ok, lastType = pcall(function() return InputService:GetLastInputType() end);
+	if ok and lastType == Enum.UserInputType.Touch then
+		if _lastTouchX ~= 0 or _lastTouchY ~= 0 then
+			return _lastTouchX, _lastTouchY;
+		end;
+	end;
+	return Mouse.X, Mouse.Y;
 end;
 
 function Library:MouseIsOverOpenedFrame()
@@ -924,8 +936,8 @@ do
 					end;
 				end);
 
-				local endConn = Input.Changed:Connect(function()
-					if Input.UserInputState == Enum.UserInputState.End then
+				local endConn = InputService.InputEnded:Connect(function(endInput)
+					if endInput == Input then
 						dragging = false;
 					end;
 				end);
@@ -963,8 +975,8 @@ do
 					end;
 				end);
 
-				local endConn = Input.Changed:Connect(function()
-					if Input.UserInputState == Enum.UserInputState.End then
+				local endConn = InputService.InputEnded:Connect(function(endInput)
+					if endInput == Input then
 						dragging = false;
 					end;
 				end);
@@ -1011,8 +1023,8 @@ do
 						end;
 					end);
 
-					local endConn = Input.Changed:Connect(function()
-						if Input.UserInputState == Enum.UserInputState.End then
+					local endConn = InputService.InputEnded:Connect(function(endInput)
+						if endInput == Input then
 							dragging = false;
 						end;
 					end);
@@ -2221,8 +2233,8 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 					end;
 				end);
 
-				local endConn = Input.Changed:Connect(function()
-					if Input.UserInputState == Enum.UserInputState.End then
+				local endConn = InputService.InputEnded:Connect(function(endInput)
+					if endInput == Input then
 						dragging = false;
 					end;
 				end);
