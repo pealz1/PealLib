@@ -5634,5 +5634,147 @@ end;
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
 
+-- ================================================================
+--  Tool Panel Builder — themed floating panels for custom tools
+-- ================================================================
+Library._ToolPanels = {}
+
+function Library:CreateToolPanel(config)
+    local gui = Instance.new("ScreenGui")
+    gui.Name = config.name or "ToolPanel"
+    gui.ResetOnSpawn = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Enabled = false
+    gui.Parent = CoreGui
+
+    local frame = Instance.new("Frame")
+    frame.AnchorPoint = config.anchor or Vector2.new(0.5, 0)
+    frame.BackgroundColor3 = Library.BackgroundColor
+    frame.BackgroundTransparency = 0.05
+    frame.BorderSizePixel = 0
+    frame.Position = config.position or UDim2.new(0.5, 0, 0.03, 0)
+    frame.Size = config.size or UDim2.new(0, 200, 0, 140)
+    frame.ClipsDescendants = true
+    frame.Parent = gui
+    do
+        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = frame
+        local s = Instance.new("UIStroke"); s.Color = Library.AccentColor; s.Thickness = 2; s.Parent = frame
+        s.Name = "AccentStroke"
+    end
+
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.AnchorPoint = Vector2.new(0.5, 0)
+    title.BackgroundTransparency = 1
+    title.Position = UDim2.new(0.5, 0, 0.02, 0)
+    title.Size = UDim2.new(0.92, 0, 0.13, 0)
+    title.Font = Library.BoldFont or Enum.Font.GothamBold
+    title.Text = config.title or "Tool"
+    title.TextColor3 = Library.AccentColor
+    title.TextScaled = true
+    title.TextTruncate = Enum.TextTruncate.AtEnd
+    title.Parent = frame
+
+    local status = Instance.new("TextLabel")
+    status.Name = "Status"
+    status.AnchorPoint = Vector2.new(0.5, 1)
+    status.BackgroundTransparency = 1
+    status.Position = UDim2.new(0.5, 0, 0.98, 0)
+    status.Size = UDim2.new(0.92, 0, 0.18, 0)
+    status.Font = Library.Font or Enum.Font.Gotham
+    status.Text = config.statusText or ""
+    status.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
+    status.TextScaled = true
+    status.TextWrapped = true
+    status.TextTruncate = Enum.TextTruncate.AtEnd
+    status.Parent = frame
+
+    local panel = {gui = gui, frame = frame, title = title, status = status}
+    table.insert(Library._ToolPanels, panel)
+    return panel
+end
+
+function Library:CreateToolInput(parent, yPos, placeholder)
+    local box = Instance.new("TextBox")
+    box.AnchorPoint = Vector2.new(0.5, 0)
+    box.BackgroundColor3 = Library.MainColor
+    box.BorderSizePixel = 0
+    box.Position = UDim2.new(0.5, 0, yPos, 0)
+    box.Size = UDim2.new(0.84, 0, 0.12, 0)
+    box.Font = Library.Font or Enum.Font.Gotham
+    box.PlaceholderText = placeholder or ""
+    box.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+    box.Text = ""
+    box.TextColor3 = Library.FontColor or Color3.fromRGB(255, 255, 255)
+    box.TextScaled = true
+    box.ClearTextOnFocus = true
+    box.ClipsDescendants = true
+    box.Parent = parent
+    do
+        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = box
+        local s = Instance.new("UIStroke"); s.Color = Library.OutlineColor; s.Thickness = 1; s.Parent = box
+    end
+    return box
+end
+
+function Library:CreateToolButton(parent, text, yPos, xPos, width, callback)
+    local btn = Instance.new("TextButton")
+    btn.AnchorPoint = Vector2.new(0, 0)
+    btn.BackgroundColor3 = Library.AccentColor
+    btn.BorderSizePixel = 0
+    btn.Position = UDim2.new(xPos, 0, yPos, 0)
+    btn.Size = UDim2.new(width or 0.44, 0, 0.1, 0)
+    btn.Font = Library.BoldFont or Enum.Font.GothamBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.ClipsDescendants = true
+    btn.Parent = parent
+    do local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = btn end
+    if callback then btn.MouseButton1Click:Connect(callback) end
+    return btn
+end
+
+function Library:CreateToolLabel(parent, text, yPos)
+    local lbl = Instance.new("TextLabel")
+    lbl.AnchorPoint = Vector2.new(0.5, 0)
+    lbl.BackgroundColor3 = Library.MainColor
+    lbl.BackgroundTransparency = 0.3
+    lbl.BorderSizePixel = 0
+    lbl.Position = UDim2.new(0.5, 0, yPos, 0)
+    lbl.Size = UDim2.new(0.84, 0, 0.12, 0)
+    lbl.Font = Library.Font or Enum.Font.Gotham
+    lbl.Text = text
+    lbl.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
+    lbl.TextScaled = true
+    lbl.TextTruncate = Enum.TextTruncate.AtEnd
+    lbl.ClipsDescendants = true
+    lbl.Parent = parent
+    do local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = lbl end
+    return lbl
+end
+
+-- Theme update loop for tool panels
+task.defer(function()
+    while not Library.Unloaded do
+        for _, panel in ipairs(Library._ToolPanels) do
+            pcall(function()
+                if panel.frame and panel.frame.Parent then
+                    panel.frame.BackgroundColor3 = Library.BackgroundColor
+                    local stroke = panel.frame:FindFirstChild("AccentStroke")
+                    if stroke then stroke.Color = Library.AccentColor end
+                end
+                if panel.title and panel.title.Parent then
+                    panel.title.TextColor3 = Library.AccentColor
+                end
+                if panel.status and panel.status.Parent then
+                    panel.status.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
 getgenv().Library = Library
 return Library
