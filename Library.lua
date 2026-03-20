@@ -165,6 +165,8 @@ function Library:CreateLabel(Properties, IsHud)
 		TextColor3 = Library.FontColor;
 		TextSize = 16;
 		TextStrokeTransparency = 0;
+		TextTruncate = Enum.TextTruncate.AtEnd;
+		ClipsDescendants = true;
 	});
 
 	Library:ApplyTextStroke(_Instance);
@@ -1520,13 +1522,16 @@ local function CreateBaseButton(Button)
 				BorderMode = Enum.BorderMode.Inset;
 				Size = UDim2.new(1, 0, 1, 0);
 				ZIndex = 6;
+				ClipsDescendants = true;
 				Parent = Outer;
 			});
 
 			local Label = Library:CreateLabel({
-				Size = UDim2.new(1, 0, 1, 0);
+				Size = UDim2.new(1, -4, 1, 0);
+				Position = UDim2.new(0, 2, 0, 0);
 				TextSize = 14;
 				Text = Button.Text;
+				TextTruncate = Enum.TextTruncate.AtEnd;
 				ZIndex = 6;
 				Parent = Inner;
 			});
@@ -2307,6 +2312,8 @@ local function CreateBaseButton(Button)
 			TextSize = 14;
 			Text = Info.Text;
 			TextXAlignment = Enum.TextXAlignment.Left;
+			TextTruncate = Enum.TextTruncate.AtEnd;
+			ClipsDescendants = true;
 			ZIndex = 6;
 			Parent = ToggleInner;
 		});
