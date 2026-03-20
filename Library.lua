@@ -3392,7 +3392,7 @@ function Library:CreatePopout(Config)
 			BackgroundTransparency = 1;
 			Position = UDim2.new(0, 4, 0, 20);
 			Size     = UDim2.new(1, -4, 1, -20);
-			ZIndex   = 1;
+			ZIndex   = 55;
 			Parent   = BoxInner;
 		});
 		Library:Create('UIListLayout', {
@@ -3400,6 +3400,18 @@ function Library:CreatePopout(Config)
 			SortOrder     = Enum.SortOrder.LayoutOrder;
 			Parent        = Container;
 		});
+
+		-- With Global ZIndexBehavior, child elements must have ZIndex >= 55
+		-- to render above the popout panels (ZIndex 50-54).
+		-- BaseGroupbox creates elements at ZIndex 5-6, so we boost them.
+		local POPOUT_ZINDEX_BOOST = 54;
+		Container.DescendantAdded:Connect(function(desc)
+			if desc:IsA('GuiObject') or desc:IsA('TextLabel') or desc:IsA('TextButton') or desc:IsA('Frame') or desc:IsA('ImageLabel') then
+				if desc.ZIndex < POPOUT_ZINDEX_BOOST then
+					desc.ZIndex = desc.ZIndex + POPOUT_ZINDEX_BOOST;
+				end;
+			end;
+		end);
 
 		function Groupbox:Resize()
 			local Size = 0;
