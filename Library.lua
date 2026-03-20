@@ -1674,6 +1674,151 @@ local function CreateBaseButton(Button)
 		return Button;
 	end;
 
+	-- ── AddRow: horizontal row with left-aligned text and right-aligned buttons ──
+	-- Usage: Groupbox:AddRow({ Text = '9/11  ServerName', Buttons = {{ Text = 'Join', Func = fn }, { Text = 'Copy', Func = fn }} })
+	-- Returns a Row object with :SetText(str), :SetVisible(bool), :SetButtons(btns)
+	function Funcs:AddRow(Info)
+		Info = Info or {};
+		local Row = {};
+		local Groupbox = self;
+		local Container = self.Container;
+
+		local ROW_HEIGHT = 22;
+		local BTN_PAD = 3;
+
+		-- Row frame (full width, fixed height)
+		local RowFrame = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			Size = UDim2.new(1, -4, 0, ROW_HEIGHT);
+			ZIndex = 5;
+			Parent = Container;
+		});
+
+		-- Left text label
+		local TextLabel = Library:CreateLabel({
+			Position = UDim2.new(0, 0, 0, 0);
+			Size = UDim2.new(1, 0, 1, 0);
+			TextSize = 13;
+			Text = Info.Text or '';
+			TextXAlignment = Enum.TextXAlignment.Left;
+			TextTruncate = Enum.TextTruncate.AtEnd;
+			ZIndex = 6;
+			Parent = RowFrame;
+		});
+
+		-- Container for right-side buttons
+		local BtnContainer = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			AnchorPoint = Vector2.new(1, 0);
+			Position = UDim2.new(1, 0, 0, 0);
+			Size = UDim2.new(0, 0, 1, 0);
+			ZIndex = 6;
+			Parent = RowFrame;
+		});
+		Library:Create('UIListLayout', {
+			FillDirection = Enum.FillDirection.Horizontal;
+			HorizontalAlignment = Enum.HorizontalAlignment.Right;
+			VerticalAlignment = Enum.VerticalAlignment.Center;
+			Padding = UDim.new(0, BTN_PAD);
+			SortOrder = Enum.SortOrder.LayoutOrder;
+			Parent = BtnContainer;
+		});
+
+		local _rowBtns = {};
+
+		local function CreateRowButton(BtnInfo, order)
+			local btnText = BtnInfo.Text or 'Btn';
+			-- Measure text width for snug button
+			local textWidth = 30;
+			pcall(function()
+				textWidth = select(1, Library:GetTextBounds(btnText, Library.Font, 12, Vector2.new(200, ROW_HEIGHT)));
+			end);
+			local btnWidth = math.max(textWidth + 12, 36);
+
+			local Outer = Library:Create('Frame', {
+				Active = true;
+				BackgroundColor3 = Color3.new(0, 0, 0);
+				BorderColor3 = Color3.new(0, 0, 0);
+				Size = UDim2.new(0, btnWidth, 0, ROW_HEIGHT - 4);
+				LayoutOrder = order or 0;
+				ZIndex = 7;
+				Parent = BtnContainer;
+			});
+
+			local Inner = Library:Create('Frame', {
+				BackgroundColor3 = Library.MainColor;
+				BorderColor3 = Library.OutlineColor;
+				BorderMode = Enum.BorderMode.Inset;
+				Size = UDim2.new(1, 0, 1, 0);
+				ZIndex = 8;
+				Parent = Outer;
+			});
+
+			local Label = Library:CreateLabel({
+				Size = UDim2.new(1, 0, 1, 0);
+				TextSize = 12;
+				Text = btnText;
+				ZIndex = 8;
+				Parent = Inner;
+			});
+
+			Library:Create('UIGradient', {
+				Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 212, 212))
+				});
+				Rotation = 90;
+				Parent = Inner;
+			});
+
+			Library:AddToRegistry(Outer, { BorderColor3 = 'Black' });
+			Library:AddToRegistry(Inner, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor' });
+			Library:OnHighlight(Outer, Outer, { BorderColor3 = 'AccentColor' }, { BorderColor3 = 'Black' });
+
+			Outer.InputBegan:Connect(function(Input)
+				if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+					if BtnInfo.Func then
+						Library:SafeCallback(BtnInfo.Func);
+					end;
+				end;
+			end);
+
+			table.insert(_rowBtns, { Outer = Outer; Inner = Inner; Label = Label; Info = BtnInfo });
+			return Outer;
+		end
+
+		-- Build initial buttons
+		if Info.Buttons then
+			local totalWidth = 0;
+			for i, btnInfo in ipairs(Info.Buttons) do
+				local btn = CreateRowButton(btnInfo, i);
+				totalWidth = totalWidth + btn.Size.X.Offset + BTN_PAD;
+			end
+			BtnContainer.Size = UDim2.new(0, totalWidth, 1, 0);
+			TextLabel.Size = UDim2.new(1, -(totalWidth + 4), 1, 0);
+		end
+
+		function Row:SetText(text)
+			TextLabel.Text = text;
+		end
+
+		function Row:SetVisible(vis)
+			RowFrame.Visible = vis;
+			Groupbox:Resize();
+		end
+
+		function Row:GetFrame()
+			return RowFrame;
+		end
+
+		Row.TextLabel = TextLabel;
+		Row.Frame = RowFrame;
+
+		Groupbox:AddBlank(3);
+		Groupbox:Resize();
+		return Row;
+	end
+
 	function Funcs:AddDivider()
 		local Groupbox = self;
 		local Container = self.Container
