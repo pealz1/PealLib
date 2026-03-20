@@ -1819,6 +1819,231 @@ local function CreateBaseButton(Button)
 		return Row;
 	end
 
+	function Funcs:AddCard(Info)
+		Info = Info or {};
+		local Card = {};
+		local Groupbox = self;
+		local Container = self.Container;
+
+		local CARD_HEIGHT = Info.Height or 52;
+		local CARD_PAD = 6;
+
+		-- Card outer frame (rounded, with UIStroke)
+		local CardFrame = Library:Create('Frame', {
+			BackgroundColor3 = Library.BackgroundColor;
+			BorderSizePixel = 0;
+			Size = UDim2.new(1, -4, 0, CARD_HEIGHT);
+			ZIndex = 5;
+			Parent = Container;
+		});
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = CardFrame; });
+		Library:Create('UIStroke', {
+			Color = Library.OutlineColor;
+			Thickness = 1;
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+			Parent = CardFrame;
+		});
+		Library:AddToRegistry(CardFrame, { BackgroundColor3 = 'BackgroundColor' });
+
+		-- Top-left badge/tag (e.g. "Normal", "XL", "VC")
+		local BadgeFrame = Library:Create('Frame', {
+			BackgroundColor3 = Library.AccentColor;
+			BorderSizePixel = 0;
+			Position = UDim2.new(0, CARD_PAD, 0, CARD_PAD);
+			Size = UDim2.fromOffset(48, 16);
+			ZIndex = 7;
+			Parent = CardFrame;
+		});
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = BadgeFrame; });
+		Library:AddToRegistry(BadgeFrame, { BackgroundColor3 = 'AccentColor' });
+
+		local BadgeLabel = Library:Create('TextLabel', {
+			BackgroundTransparency = 1;
+			Size = UDim2.new(1, 0, 1, 0);
+			Font = Library.Font;
+			Text = Info.Badge or '';
+			TextColor3 = Library.FontColor;
+			TextSize = 11;
+			ZIndex = 8;
+			Parent = BadgeFrame;
+		});
+		Library:AddToRegistry(BadgeLabel, { TextColor3 = 'FontColor' });
+
+		-- Auto-size badge to text
+		pcall(function()
+			local tw = select(1, Library:GetTextBounds(BadgeLabel.Text, Library.Font, 11, Vector2.new(200, 16)));
+			BadgeFrame.Size = UDim2.fromOffset(math.max(tw + 10, 28), 16);
+		end);
+
+		-- Subtitle under badge (e.g. uptime)
+		local SubLabel = Library:CreateLabel({
+			Position = UDim2.new(0, CARD_PAD, 0, CARD_PAD + 18);
+			Size = UDim2.new(0, 80, 0, 14);
+			TextSize = 11;
+			Text = Info.Subtitle or '';
+			TextXAlignment = Enum.TextXAlignment.Left;
+			TextColor3 = Color3.fromRGB(170, 170, 170);
+			ZIndex = 7;
+			Parent = CardFrame;
+		});
+
+		-- Left middle area: player count text
+		local CountLabel = Library:CreateLabel({
+			Position = UDim2.new(0, CARD_PAD, 0, CARD_PAD + 32);
+			Size = UDim2.new(0, 50, 0, 14);
+			TextSize = 13;
+			Text = Info.LeftText or '';
+			TextXAlignment = Enum.TextXAlignment.Left;
+			ZIndex = 7;
+			Parent = CardFrame;
+		});
+
+		-- Thumbnail container (for player avatars)
+		local ThumbContainer = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			Position = UDim2.new(0, CARD_PAD + 48, 0, CARD_PAD + 30);
+			Size = UDim2.fromOffset(60, 18);
+			ZIndex = 7;
+			Parent = CardFrame;
+		});
+		Library:Create('UIListLayout', {
+			FillDirection = Enum.FillDirection.Horizontal;
+			Padding = UDim.new(0, -4);
+			VerticalAlignment = Enum.VerticalAlignment.Center;
+			SortOrder = Enum.SortOrder.LayoutOrder;
+			Parent = ThumbContainer;
+		});
+
+		local _thumbImages = {};
+		for idx = 1, 3 do
+			local img = Library:Create('ImageLabel', {
+				BackgroundColor3 = Color3.fromRGB(40, 40, 40);
+				BorderSizePixel = 0;
+				Size = UDim2.fromOffset(18, 18);
+				Image = '';
+				Visible = false;
+				LayoutOrder = idx;
+				ZIndex = 8 + (3 - idx);
+				Parent = ThumbContainer;
+			});
+			Library:Create('UICorner', { CornerRadius = UDim.new(1, 0); Parent = img; });
+			Library:Create('UIStroke', {
+				Color = Library.BackgroundColor;
+				Thickness = 1.5;
+				ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+				Parent = img;
+			});
+			_thumbImages[idx] = img;
+		end
+
+		-- Right-side action button
+		local btnText = (Info.Button and Info.Button.Text) or 'Join';
+		local btnColor = (Info.Button and Info.Button.Color) or Color3.fromRGB(46, 160, 67);
+		local btnHover = (Info.Button and Info.Button.HoverColor) or Color3.fromRGB(56, 185, 80);
+
+		local btnWidth = 52;
+		pcall(function()
+			local tw = select(1, Library:GetTextBounds(btnText, Library.Font, 13, Vector2.new(200, 30)));
+			btnWidth = math.max(tw + 16, 48);
+		end);
+
+		local BtnFrame = Library:Create('Frame', {
+			Active = true;
+			AnchorPoint = Vector2.new(1, 0.5);
+			BackgroundColor3 = btnColor;
+			BorderSizePixel = 0;
+			Position = UDim2.new(1, -CARD_PAD, 0.5, 0);
+			Size = UDim2.fromOffset(btnWidth, CARD_HEIGHT - 16);
+			ZIndex = 7;
+			Parent = CardFrame;
+		});
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = BtnFrame; });
+
+		local BtnLabel = Library:Create('TextLabel', {
+			BackgroundTransparency = 1;
+			Size = UDim2.new(1, 0, 1, 0);
+			Font = Library.Font;
+			Text = btnText;
+			TextColor3 = Color3.new(1, 1, 1);
+			TextSize = 13;
+			ZIndex = 8;
+			Parent = BtnFrame;
+		});
+
+		BtnFrame.MouseEnter:Connect(function()
+			TweenService:Create(BtnFrame, TweenInfo.new(0.12), { BackgroundColor3 = btnHover }):Play();
+		end);
+		BtnFrame.MouseLeave:Connect(function()
+			TweenService:Create(BtnFrame, TweenInfo.new(0.12), { BackgroundColor3 = btnColor }):Play();
+		end);
+		BtnFrame.InputBegan:Connect(function(Input)
+			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+				if Info.Button and Info.Button.Func then
+					Library:SafeCallback(Info.Button.Func);
+				end;
+			end;
+		end);
+
+		-- API
+		function Card:SetBadge(text)
+			BadgeLabel.Text = text;
+			pcall(function()
+				local tw = select(1, Library:GetTextBounds(text, Library.Font, 11, Vector2.new(200, 16)));
+				BadgeFrame.Size = UDim2.fromOffset(math.max(tw + 10, 28), 16);
+			end);
+		end
+
+		function Card:SetBadgeColor(color)
+			BadgeFrame.BackgroundColor3 = color;
+		end
+
+		function Card:SetSubtitle(text)
+			SubLabel.Text = text;
+		end
+
+		function Card:SetLeftText(text)
+			CountLabel.Text = text;
+		end
+
+		function Card:SetThumbnails(urls)
+			for i = 1, 3 do
+				if urls and urls[i] and urls[i] ~= '' then
+					_thumbImages[i].Image = urls[i];
+					_thumbImages[i].Visible = true;
+				else
+					_thumbImages[i].Image = '';
+					_thumbImages[i].Visible = false;
+				end
+			end
+		end
+
+		function Card:SetButtonFunc(func)
+			Info.Button = Info.Button or {};
+			Info.Button.Func = func;
+		end
+
+		function Card:SetVisible(vis)
+			CardFrame.Visible = vis;
+			Groupbox:Resize();
+		end
+
+		function Card:GetFrame()
+			return CardFrame;
+		end
+
+		Card.Frame = CardFrame;
+		Card.BadgeLabel = BadgeLabel;
+		Card.BadgeFrame = BadgeFrame;
+		Card.SubLabel = SubLabel;
+		Card.CountLabel = CountLabel;
+		Card.BtnFrame = BtnFrame;
+		Card.BtnLabel = BtnLabel;
+
+		Groupbox:AddBlank(3);
+		Groupbox:Resize();
+		return Card;
+	end
+
 	function Funcs:AddDivider()
 		local Groupbox = self;
 		local Container = self.Container
