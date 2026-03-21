@@ -167,7 +167,7 @@ function Library:CreateLabel(Properties, IsHud)
 		TextSize = 16;
 		TextStrokeTransparency = 0;
 		TextTruncate = Enum.TextTruncate.AtEnd;
-		ClipsDescendants = true;
+		ClipsDescendants = false; -- bro this was intentional??
 	});
 
 	Library:ApplyTextStroke(_Instance);
