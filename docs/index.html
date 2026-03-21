@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PealLib - Roblox UI Library</title>
+    <meta name="description" content="A modern, feature-rich UI library for Roblox. Build professional interfaces with toggles, sliders, dropdowns, themes, and more.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <span class="logo-icon">P</span>
+                <span class="logo-text">PealLib</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#elements">Elements</a>
+                <a href="#api">API</a>
+                <a href="#themes">Themes</a>
+                <a href="https://github.com/pealz1/PealLib" target="_blank" class="nav-github">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+            </div>
+            <button class="nav-toggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-badge">Roblox UI Library</div>
+            <h1 class="hero-title">Build beautiful interfaces<br>with <span class="gradient-text">PealLib</span></h1>
+            <p class="hero-subtitle">A modern, feature-rich UI library for Roblox scripts. Toggles, sliders, dropdowns, color pickers, themes, config persistence -- everything you need in one library.</p>
+            <div class="hero-actions">
+                <a href="#quickstart" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/pealz1/PealLib" target="_blank" class="btn btn-secondary">View on GitHub</a>
+            </div>
+            <div class="hero-code">
+                <div class="code-header">
+                    <span class="code-dot red"></span>
+                    <span class="code-dot yellow"></span>
+                    <span class="code-dot green"></span>
+                    <span class="code-filename">script.lua</span>
+                </div>
+<pre><code><span class="kw">local</span> repo = <span class="str">'https://raw.githubusercontent.com/pealz1/PealLib/main/'</span>
+<span class="kw">local</span> Library = <span class="fn">loadstring</span>(game:<span class="fn">HttpGet</span>(repo .. <span class="str">'Library.lua'</span>))()
+
+<span class="kw">local</span> Window = Library:<span class="fn">CreateWindow</span>({
+    Title  = <span class="str">'My Script Hub'</span>,
+    Center = <span class="bool">true</span>,
+    AutoShow = <span class="bool">true</span>
+})
+
+<span class="kw">local</span> Tab = Window:<span class="fn">AddTab</span>(<span class="str">'Main'</span>)
+<span class="kw">local</span> Box = Tab:<span class="fn">AddLeftGroupbox</span>(<span class="str">'Features'</span>)
+
+Box:<span class="fn">AddToggle</span>(<span class="str">'Enabled'</span>, { Text = <span class="str">'Enable Feature'</span> })
+Box:<span class="fn">AddSlider</span>(<span class="str">'Speed'</span>,   { Text = <span class="str">'Speed'</span>, Min = <span class="num">0</span>, Max = <span class="num">100</span>, Default = <span class="num">16</span>, Rounding = <span class="num">0</span> })</code></pre>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="section">
+        <div class="container">
+            <h2 class="section-title">Everything you need</h2>
+            <p class="section-subtitle">PealLib provides a complete toolkit for building professional Roblox interfaces</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F3A8;</div>
+                    <h3>Rich UI Elements</h3>
+                    <p>Toggles, sliders, dropdowns, color pickers, keybind pickers, text inputs, buttons, cards, and more -- all styled and ready to use.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F4D0;</div>
+                    <h3>Smart Layout</h3>
+                    <p>Tabs, left/right groupboxes, nested tabboxes, and auto-scrolling overflow. Your UI adapts to any amount of content.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x2728;</div>
+                    <h3>8 Built-in Themes</h3>
+                    <p>Switch between Default, BBot, Fatality, Jester, Mint, Tokyo Night, Ubuntu, and Quartz -- or create your own custom themes.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F4BE;</div>
+                    <h3>Config Persistence</h3>
+                    <p>Save and load all UI state -- toggles, sliders, dropdowns, keybinds, colors -- to disk with autoload support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F517;</div>
+                    <h3>Dependency System</h3>
+                    <p>Show or hide UI elements based on the state of other elements. Build dynamic, context-aware interfaces.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F514;</div>
+                    <h3>Notifications &amp; More</h3>
+                    <p>Built-in notification system, watermarks, tooltips, popout windows, and drag-and-drop support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Quick Start</h2>
+            <p class="section-subtitle">Get up and running in under a minute</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h3>Load the library</h3>
+                        <div class="code-block">
+<pre><code><span class="kw">local</span> repo = <span class="str">'https://raw.githubusercontent.com/pealz1/PealLib/main/'</span>
+
+<span class="kw">local</span> Library      = <span class="fn">loadstring</span>(game:<span class="fn">HttpGet</span>(repo .. <span class="str">'Library.lua'</span>))()
+<span class="kw">local</span> ThemeManager = <span class="fn">loadstring</span>(game:<span class="fn">HttpGet</span>(repo .. <span class="str">'addons/ThemeManager.lua'</span>))()
+<span class="kw">local</span> SaveManager  = <span class="fn">loadstring</span>(game:<span class="fn">HttpGet</span>(repo .. <span class="str">'addons/SaveManager.lua'</span>))()
+</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h3>Create a window and add elements</h3>
+                        <div class="code-block">
+<pre><code><span class="kw">local</span> Window = Library:<span class="fn">CreateWindow</span>({
+    Title    = <span class="str">'My Script Hub'</span>,
+    Center   = <span class="bool">true</span>,
+    AutoShow = <span class="bool">true</span>
+})
+
+<span class="kw">local</span> Tab = Window:<span class="fn">AddTab</span>(<span class="str">'Main'</span>)
+<span class="kw">local</span> Box = Tab:<span class="fn">AddLeftGroupbox</span>(<span class="str">'Features'</span>)
+
+Box:<span class="fn">AddToggle</span>(<span class="str">'MyToggle'</span>, {
+    Text    = <span class="str">'Enable Feature'</span>,
+    Default = <span class="bool">false</span>,
+    Callback = <span class="kw">function</span>(value)
+        <span class="fn">print</span>(<span class="str">'Toggled:'</span>, value)
+    <span class="kw">end</span>
+})
+
+Box:<span class="fn">AddSlider</span>(<span class="str">'MySlider'</span>, {
+    Text     = <span class="str">'Walk Speed'</span>,
+    Default  = <span class="num">16</span>,
+    Min      = <span class="num">0</span>,
+    Max      = <span class="num">100</span>,
+    Rounding = <span class="num">0</span>,
+    Suffix   = <span class="str">' studs/s'</span>
+})</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h3>Add themes and config saving</h3>
+                        <div class="code-block">
+<pre><code><span class="kw">local</span> SettingsTab = Window:<span class="fn">AddTab</span>(<span class="str">'Settings'</span>)
+
+ThemeManager:<span class="fn">SetLibrary</span>(Library)
+SaveManager:<span class="fn">SetLibrary</span>(Library)
+SaveManager:<span class="fn">IgnoreThemeSettings</span>()
+
+ThemeManager:<span class="fn">ApplyToTab</span>(SettingsTab)
+SaveManager:<span class="fn">BuildConfigSection</span>(SettingsTab)
+
+<span class="cmt">-- Auto-load saved config on start</span>
+SaveManager:<span class="fn">LoadAutoloadConfig</span>()</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="elements" class="section">
+        <div class="container">
+            <h2 class="section-title">UI Elements</h2>
+            <p class="section-subtitle">Complete reference for every available element</p>
+
+            <div class="element-grid">
+                <div class="element-card" id="el-toggle">
+                    <h3>Toggle</h3>
+                    <p>Boolean on/off switch with optional keybind attachment.</p>
+                    <div class="code-block code-sm">
+<pre><code>Box:<span class="fn">AddToggle</span>(<span class="str">'Index'</span>, {
+    Text     = <span class="str">'Label'</span>,
+    Default  = <span class="bool">false</span>,
+    Tooltip  = <span class="str">'Description'</span>,
+    Callback = <span class="kw">function</span>(v) <span class="kw">end</span>
+})
+
+<span class="cmt">-- Read value globally</span>
+Toggles.Index.Value  <span class="cmt">-- true / false</span>
+</code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param">Text</span> <span class="param">Default</span> <span class="param">Tooltip</span> <span class="param">Callback</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-slider">
+                    <h3>Slider</h3>
+                    <p>Numeric range slider with configurable min, max, rounding, and suffix.</p>
+                    <div class="code-block code-sm">
+<pre><code>Box:<span class="fn">AddSlider</span>(<span class="str">'Index'</span>, {
+    Text     = <span class="str">'Label'</span>,
+    Default  = <span class="num">50</span>,
+    Min      = <span class="num">0</span>,
+    Max      = <span class="num">100</span>,
+    Rounding = <span class="num">0</span>,
+    Suffix   = <span class="str">'%'</span>,
+    Compact  = <span class="bool">false</span>,
+    HideMax  = <span class="bool">false</span>
+})</code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param required">Text</span> <span class="param required">Default</span> <span class="param required">Min</span> <span class="param required">Max</span> <span class="param required">Rounding</span> <span class="param">Suffix</span> <span class="param">Compact</span> <span class="param">HideMax</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-dropdown">
+                    <h3>Dropdown</h3>
+                    <p>Single or multi-select dropdown. Supports dynamic player lists.</p>
+                    <div class="code-block code-sm">
+<pre><code><span class="cmt">-- Single select</span>
+Box:<span class="fn">AddDropdown</span>(<span class="str">'Index'</span>, {
+    Text   = <span class="str">'Label'</span>,
+    Values = {<span class="str">'A'</span>, <span class="str">'B'</span>, <span class="str">'C'</span>},
+    Default = <span class="num">1</span>
+})
+
+<span class="cmt">-- Multi select</span>
+Box:<span class="fn">AddDropdown</span>(<span class="str">'Index'</span>, {
+    Values = {<span class="str">'Red'</span>, <span class="str">'Green'</span>, <span class="str">'Blue'</span>},
+    Multi  = <span class="bool">true</span>
+})
+
+<span class="cmt">-- Player list</span>
+Box:<span class="fn">AddDropdown</span>(<span class="str">'Target'</span>, {
+    SpecialType = <span class="str">'Player'</span>
+})</code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param required">Values</span> <span class="param">Default</span> <span class="param">Multi</span> <span class="param">SpecialType</span> <span class="param">AllowNull</span> <span class="param">Text</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-input">
+                    <h3>Input</h3>
+                    <p>Text input field with optional numeric-only mode and max length.</p>
+                    <div class="code-block code-sm">
+<pre><code>Box:<span class="fn">AddInput</span>(<span class="str">'Index'</span>, {
+    Text        = <span class="str">'Label'</span>,
+    Default     = <span class="str">''</span>,
+    Placeholder = <span class="str">'Type here...'</span>,
+    Numeric     = <span class="bool">false</span>,
+    Finished    = <span class="bool">false</span>,
+    MaxLength   = <span class="num">64</span>
+})</code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param">Text</span> <span class="param">Default</span> <span class="param">Placeholder</span> <span class="param">Numeric</span> <span class="param">Finished</span> <span class="param">MaxLength</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-colorpicker">
+                    <h3>Color Picker</h3>
+                    <p>RGB/HSV color selector with optional transparency slider.</p>
+                    <div class="code-block code-sm">
+<pre><code><span class="cmt">-- Attach to a label</span>
+Box:<span class="fn">AddLabel</span>(<span class="str">'Color'</span>):<span class="fn">AddColorPicker</span>(<span class="str">'Index'</span>, {
+    Default      = Color3.<span class="fn">fromRGB</span>(<span class="num">255</span>, <span class="num">0</span>, <span class="num">0</span>),
+    Title        = <span class="str">'Pick Color'</span>,
+    Transparency = <span class="num">0</span>
+})
+
+Options.Index.Value         <span class="cmt">-- Color3</span>
+Options.Index.Transparency  <span class="cmt">-- 0-1</span></code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param required">Default</span> <span class="param">Title</span> <span class="param">Transparency</span> <span class="param">Callback</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-keypicker">
+                    <h3>Keybind Picker</h3>
+                    <p>Configurable keybind with Always, Toggle, and Hold modes.</p>
+                    <div class="code-block code-sm">
+<pre><code><span class="cmt">-- Attach to a label or toggle</span>
+Box:<span class="fn">AddLabel</span>(<span class="str">'Trigger'</span>):<span class="fn">AddKeyPicker</span>(<span class="str">'Index'</span>, {
+    Default  = <span class="str">'MB2'</span>,
+    Mode     = <span class="str">'Toggle'</span>,
+    Text     = <span class="str">'Trigger Key'</span>
+})
+
+Options.Index.Value  <span class="cmt">-- key name</span>
+Options.Index.Mode   <span class="cmt">-- mode string</span></code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param">Default</span> <span class="param">Mode</span> <span class="param">Text</span> <span class="param">NoUI</span> <span class="param">SyncToggleState</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-button">
+                    <h3>Button</h3>
+                    <p>Clickable button with sub-button nesting and double-click support.</p>
+                    <div class="code-block code-sm">
+<pre><code><span class="kw">local</span> btn = Box:<span class="fn">AddButton</span>({
+    Text        = <span class="str">'Execute'</span>,
+    DoubleClick = <span class="bool">true</span>,
+    Tooltip     = <span class="str">'Double-click to confirm'</span>,
+    Func = <span class="kw">function</span>()
+        <span class="fn">print</span>(<span class="str">'Executed!'</span>)
+    <span class="kw">end</span>
+})
+
+<span class="cmt">-- Nest a sub-button</span>
+btn:<span class="fn">AddButton</span>({
+    Text = <span class="str">'Cancel'</span>,
+    Func = <span class="kw">function</span>() <span class="kw">end</span>
+})</code></pre>
+                    </div>
+                    <div class="element-params">
+                        <span class="param required">Text</span> <span class="param required">Func</span> <span class="param">Tooltip</span> <span class="param">DoubleClick</span>
+                    </div>
+                </div>
+
+                <div class="element-card" id="el-depbox">
+                    <h3>Dependency Box</h3>
+                    <p>Container that shows/hides its children based on other element states.</p>
+                    <div class="code-block code-sm">
+<pre><code><span class="kw">local</span> depbox = Box:<span class="fn">AddDependencyBox</span>()
+
+depbox:<span class="fn">SetupDependencies</span>({
+    { Toggles.MyToggle, <span class="bool">true</span> }
+})
+
+<span class="cmt">-- Elements inside only show when</span>
+<span class="cmt">-- MyToggle is true</span>
+depbox:<span class="fn">AddSlider</span>(<span class="str">'DepSlider'</span>, {
+    Text = <span class="str">'Conditional'</span>,
+    Default = <span class="num">50</span>, Min = <span class="num">0</span>,
+    Max = <span class="num">100</span>, Rounding = <span class="num">0</span>
+})</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">Other Elements</h3>
+            <div class="other-elements">
+                <div class="other-el">
+                    <code>Box:AddLabel(text, doesWrap)</code>
+                    <span>Static or dynamic text label</span>
+                </div>
+                <div class="other-el">
+                    <code>Box:AddDivider()</code>
+                    <span>Horizontal separator line</span>
+                </div>
+                <div class="other-el">
+                    <code>Box:AddBlank(size)</code>
+                    <span>Vertical spacing</span>
+                </div>
+                <div class="other-el">
+                    <code>Box:AddRow(config)</code>
+                    <span>Horizontal button layout</span>
+                </div>
+                <div class="other-el">
+                    <code>Box:AddCard(config)</code>
+                    <span>Info card with badge and buttons</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="api" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">API Reference</h2>
+            <p class="section-subtitle">Core library methods and global tables</p>
+
+            <div class="api-group">
+                <h3>Library Methods</h3>
+                <div class="api-table">
+                    <div class="api-row">
+                        <code class="api-method">Library:CreateWindow(config)</code>
+                        <span class="api-desc">Create the main application window</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:CreatePopout(config)</code>
+                        <span class="api-desc">Create a floating auxiliary window</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:Notify(message, duration)</code>
+                        <span class="api-desc">Show a notification toast</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:SetWatermark(text)</code>
+                        <span class="api-desc">Set watermark text content</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:SetWatermarkVisibility(bool)</code>
+                        <span class="api-desc">Toggle watermark display</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:Unload()</code>
+                        <span class="api-desc">Destroy all UI and clean up</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:OnUnload(callback)</code>
+                        <span class="api-desc">Register a cleanup callback</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:AddToolTip(text, instance)</code>
+                        <span class="api-desc">Add hover tooltip to any instance</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Library:MakeDraggable(instance)</code>
+                        <span class="api-desc">Enable drag-and-drop on a frame</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-group">
+                <h3>Window Methods</h3>
+                <div class="api-table">
+                    <div class="api-row">
+                        <code class="api-method">Window:AddTab(name)</code>
+                        <span class="api-desc">Add a new tab, returns Tab object</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-group">
+                <h3>Tab Methods</h3>
+                <div class="api-table">
+                    <div class="api-row">
+                        <code class="api-method">Tab:AddLeftGroupbox(name)</code>
+                        <span class="api-desc">Add a groupbox to the left column</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Tab:AddRightGroupbox(name)</code>
+                        <span class="api-desc">Add a groupbox to the right column</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Tab:AddLeftTabbox()</code>
+                        <span class="api-desc">Add a tabbox container to the left</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Tab:AddRightTabbox()</code>
+                        <span class="api-desc">Add a tabbox container to the right</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-group">
+                <h3>Global Tables</h3>
+                <div class="api-table">
+                    <div class="api-row">
+                        <code class="api-method">Toggles.Index.Value</code>
+                        <span class="api-desc">Access any toggle's boolean state</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Options.Index.Value</code>
+                        <span class="api-desc">Access any element's current value (sliders, dropdowns, inputs, etc.)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-group">
+                <h3>Element Methods</h3>
+                <div class="api-table">
+                    <div class="api-row">
+                        <code class="api-method">Element:OnChanged(callback)</code>
+                        <span class="api-desc">Listen for value changes after creation</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Element:SetValue(value)</code>
+                        <span class="api-desc">Programmatically update the element's value</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">Dropdown:SetValues(array)</code>
+                        <span class="api-desc">Replace the dropdown's option list</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">ColorPicker:SetValueRGB(color3, transparency)</code>
+                        <span class="api-desc">Set color picker value programmatically</span>
+                    </div>
+                    <div class="api-row">
+                        <code class="api-method">KeyPicker:GetState()</code>
+                        <span class="api-desc">Check if the keybind is currently active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-group">
+                <h3>Window Configuration</h3>
+                <div class="config-table">
+                    <table>
+                        <thead>
+                            <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>Title</code></td><td>string</td><td><code>"Library"</code></td><td>Window title text</td></tr>
+                            <tr><td><code>Center</code></td><td>boolean</td><td><code>false</code></td><td>Center window on screen</td></tr>
+                            <tr><td><code>AutoShow</code></td><td>boolean</td><td><code>false</code></td><td>Show immediately on creation</td></tr>
+                            <tr><td><code>Position</code></td><td>UDim2</td><td>--</td><td>Custom window position</td></tr>
+                            <tr><td><code>Size</code></td><td>UDim2</td><td>--</td><td>Custom window size</td></tr>
+                            <tr><td><code>TabPadding</code></td><td>number</td><td><code>0</code></td><td>Spacing between tab buttons</td></tr>
+                            <tr><td><code>MenuFadeTime</code></td><td>number</td><td><code>0.2</code></td><td>Show/hide animation duration</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="themes" class="section">
+        <div class="container">
+            <h2 class="section-title">Themes</h2>
+            <p class="section-subtitle">8 built-in themes with full custom theme support</p>
+
+            <div class="themes-showcase">
+                <div class="theme-chip" style="--accent: #6759b3">Default</div>
+                <div class="theme-chip" style="--accent: #7b68ee">BBot</div>
+                <div class="theme-chip" style="--accent: #ff4444">Fatality</div>
+                <div class="theme-chip" style="--accent: #e84393">Jester</div>
+                <div class="theme-chip" style="--accent: #2ecc71">Mint</div>
+                <div class="theme-chip" style="--accent: #7aa2f7">Tokyo Night</div>
+                <div class="theme-chip" style="--accent: #e95420">Ubuntu</div>
+                <div class="theme-chip" style="--accent: #a855f7">Quartz</div>
+            </div>
+
+            <div class="theme-code">
+                <h3>ThemeManager</h3>
+                <div class="code-block">
+<pre><code>ThemeManager:<span class="fn">SetLibrary</span>(Library)
+ThemeManager:<span class="fn">SetFolder</span>(<span class="str">'MyScript'</span>)
+
+<span class="cmt">-- Apply to a settings tab</span>
+ThemeManager:<span class="fn">ApplyToTab</span>(SettingsTab)
+
+<span class="cmt">-- Or apply to a specific groupbox</span>
+ThemeManager:<span class="fn">ApplyToGroupbox</span>(MyGroupbox)
+
+<span class="cmt">-- Programmatic theme switching</span>
+ThemeManager:<span class="fn">ApplyTheme</span>(<span class="str">'Tokyo Night'</span>)</code></pre>
+                </div>
+
+                <h3>SaveManager</h3>
+                <div class="code-block">
+<pre><code>SaveManager:<span class="fn">SetLibrary</span>(Library)
+SaveManager:<span class="fn">SetFolder</span>(<span class="str">'MyScript'</span>)
+SaveManager:<span class="fn">IgnoreThemeSettings</span>()
+
+<span class="cmt">-- Add config UI to a tab</span>
+SaveManager:<span class="fn">BuildConfigSection</span>(SettingsTab)
+
+<span class="cmt">-- Auto-load on start</span>
+SaveManager:<span class="fn">LoadAutoloadConfig</span>()
+
+<span class="cmt">-- Programmatic save/load</span>
+SaveManager:<span class="fn">Save</span>(<span class="str">'my_config'</span>)
+SaveManager:<span class="fn">Load</span>(<span class="str">'my_config'</span>)</code></pre>
+                </div>
+            </div>
+
+            <div class="theme-colors">
+                <h3>Theme Color Properties</h3>
+                <div class="color-list">
+                    <div class="color-item"><span class="color-swatch" style="background:#cacaca"></span><code>FontColor</code></div>
+                    <div class="color-item"><span class="color-swatch" style="background:#1c1c1c"></span><code>MainColor</code></div>
+                    <div class="color-item"><span class="color-swatch" style="background:#141414"></span><code>BackgroundColor</code></div>
+                    <div class="color-item"><span class="color-swatch" style="background:#6759b3"></span><code>AccentColor</code></div>
+                    <div class="color-item"><span class="color-swatch" style="background:#323232"></span><code>OutlineColor</code></div>
+                    <div class="color-item"><span class="color-swatch" style="background:#ff4444"></span><code>RiskColor</code></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <span class="logo-icon">P</span>
+                    <span>PealLib</span>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/pealz1/PealLib" target="_blank">GitHub</a>
+                    <a href="https://github.com/pealz1/PealLib/blob/main/Example.lua" target="_blank">Example</a>
+                    <a href="https://github.com/pealz1/PealLib/blob/main/LICENSE" target="_blank">MIT License</a>
+                    <a href="https://discord.gg/zSuZN5e6MZ" target="_blank">Discord</a>
+                </div>
+            </div>
+            <div class="footer-copy">
+                Made by Pealz &middot; Based on LinoriaLib by Inori
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelector('.nav-toggle').addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('open');
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.querySelector('.nav-links').classList.remove('open');
+                }
+            });
+        });
+
+        window.addEventListener('scroll', function() {
+            document.querySelector('.nav').classList.toggle('scrolled', window.scrollY > 40);
+        });
+    </script>
+</body>
+</html>
