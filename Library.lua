@@ -5893,6 +5893,42 @@ function Library:CreateToolLabel(parent, text, yPos)
     return lbl
 end
 
+
+function Library:CreateToolImagePreview(parent, yPos)
+    local container = Library:Create('Frame', {
+        AnchorPoint      = Vector2.new(0.5, 0);
+        BackgroundColor3 = Library.BackgroundColor;
+        BorderSizePixel  = 0;
+        Position         = UDim2.new(0.5, 0, yPos, 0);
+        Size             = UDim2.new(0.88, 0, 0, 0);
+        ZIndex           = 5;
+        Parent           = parent;
+    })
+    Library:Create('UIAspectRatioConstraint', { AspectRatio = 1; Parent = container })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = container })
+    Library:AddToRegistry(container, { BackgroundColor3 = 'BackgroundColor' })
+
+    local img = Library:Create('ImageLabel', {
+        BackgroundTransparency = 1;
+        Size                   = UDim2.new(1, 0, 1, 0);
+        ScaleType              = Enum.ScaleType.Fit;
+        Image                  = '';
+        ZIndex                 = 6;
+        Parent                 = container;
+    })
+
+    local preview = {}
+    function preview:SetImage(id)
+        img.Image = id and id ~= '' and ('rbxassetid://' .. tostring(id)) or ''
+    end
+    function preview:SetVisible(vis)
+        container.Visible = vis
+    end
+    preview.container = container
+    preview.label     = img
+    return preview
+end
+
 task.defer(function()
     while not Library.Unloaded do
         for _, panel in ipairs(Library._ToolPanels) do
