@@ -1531,17 +1531,18 @@ local Label = Library:CreateLabel({
     Size = UDim2.new(1, -4, 1, 0);
     Position = UDim2.new(0, 2, 0, 0);
     TextSize = 14;
-    TextScaled = true;
-    TextTruncate = Enum.TextTruncate.None;
     Text = Button.Text;
     ZIndex = 6;
     Parent = Inner;
 });
-Library:Create('UITextSizeConstraint', {
-    MinTextSize = 9;
-    MaxTextSize = 14;
-    Parent = Label;
-});
+do
+    Label.TextScaled = true
+    Label.TextTruncate = Enum.TextTruncate.None
+    local _tc = Instance.new('UITextSizeConstraint')
+    _tc.MinTextSize = 8
+    _tc.MaxTextSize = 14
+    _tc.Parent = Label
+end
 
 			Library:Create('UIGradient', {
 				Color = ColorSequence.new({
@@ -3797,15 +3798,11 @@ function Library:CreatePopout(Config)
 			end;
 		end);
 
-		function Groupbox:Resize()
-			local Size = 0;
-			for _, El in next, Container:GetChildren() do
-				if not El:IsA('UIListLayout') and El.Visible then
-					Size = Size + El.Size.Y.Offset;
-				end;
-			end;
-			BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 4);
-		end;
+function Groupbox:Resize()
+    local layout = Container:FindFirstChildWhichIsA('UIListLayout')
+    local h = layout and layout.AbsoluteContentSize.Y or 0
+    BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
+end;
 
 		Groupbox.Container = Container;
 		setmetatable(Groupbox, BaseGroupbox);
@@ -4434,15 +4431,11 @@ function Library:CreateHomeTab(Window, Info)
 			Parent        = Container;
 		});
 
-		function Groupbox:Resize()
-			local Size = 0;
-			for _, Element in next, Container:GetChildren() do
-				if not Element:IsA('UIListLayout') and Element.Visible then
-					Size = Size + Element.Size.Y.Offset;
-				end;
-			end;
-			BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2 + 2);
-		end;
+function Groupbox:Resize()
+    local layout = Container:FindFirstChildWhichIsA('UIListLayout')
+    local h = layout and layout.AbsoluteContentSize.Y or 0
+    BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
+end;
 
 		Groupbox.Container = Container;
 		setmetatable(Groupbox, BaseGroupbox);
@@ -5278,17 +5271,11 @@ local BoxInner = Library:Create('Frame', {
 				Parent = Container;
 			});
 
-			function Groupbox:Resize()
-				local Size = 0;
-
-				for _, Element in next, Groupbox.Container:GetChildren() do
-					if (not Element:IsA('UIListLayout')) and Element.Visible then
-						Size = Size + Element.Size.Y.Offset;
-					end;
-				end;
-
-				BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2 + 2);
-			end;
+function Groupbox:Resize()
+    local layout = Container:FindFirstChildWhichIsA('UIListLayout')
+    local h = layout and layout.AbsoluteContentSize.Y or 0
+    BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
+end;
 
 			Groupbox.Container = Container;
 			setmetatable(Groupbox, BaseGroupbox);
