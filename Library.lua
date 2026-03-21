@@ -11,6 +11,7 @@ local Mouse = LocalPlayer:GetMouse();
 
 local Toggled = false;
 local _lastTouchX, _lastTouchY = 0, 0;
+_lastTabHoverSoundTime = 0;
 
 -- Track touch position globally so GetMousePosition always has a fresh value
 InputService.InputChanged:Connect(function(input)
@@ -1508,13 +1509,13 @@ do
 		local Container = Groupbox.Container;
 
 local function CreateBaseButton(Button)
-			local Outer = Library:Create('Frame', {
-				Active = true;
-				BackgroundColor3 = Color3.new(0, 0, 0);
-				BorderColor3 = Color3.new(0, 0, 0);
-				Size = UDim2.new(1, -4, 0, 20);
-				ZIndex = 5;
-			});
+local Outer = Library:Create('Frame', {
+    Active = true;
+    BackgroundColor3 = Color3.new(0, 0, 0);
+    BorderColor3 = Color3.new(0, 0, 0);
+    Size = UDim2.new(1, -4, 0, 24);
+    ZIndex = 5;
+});
 
 			local Inner = Library:Create('Frame', {
 				BackgroundColor3 = Library.MainColor;
@@ -1526,15 +1527,21 @@ local function CreateBaseButton(Button)
 				Parent = Outer;
 			});
 
-			local Label = Library:CreateLabel({
-				Size = UDim2.new(1, -4, 1, 0);
-				Position = UDim2.new(0, 2, 0, 0);
-				TextSize = 14;
-				Text = Button.Text;
-				TextTruncate = Enum.TextTruncate.AtEnd;
-				ZIndex = 6;
-				Parent = Inner;
-			});
+local Label = Library:CreateLabel({
+    Size = UDim2.new(1, -4, 1, 0);
+    Position = UDim2.new(0, 2, 0, 0);
+    TextSize = 14;
+    TextScaled = true;
+    TextTruncate = Enum.TextTruncate.None;
+    Text = Button.Text;
+    ZIndex = 6;
+    Parent = Inner;
+});
+Library:Create('UITextSizeConstraint', {
+    MinTextSize = 9;
+    MaxTextSize = 14;
+    Parent = Label;
+});
 
 			Library:Create('UIGradient', {
 				Color = ColorSequence.new({
@@ -3856,17 +3863,44 @@ function Library:CreatePopout(Config)
 		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = _BtnAccent; });
 		Library:AddToRegistry(_BtnAccent, { BackgroundColor3 = 'AccentColor' });
 
-		local BtnLabel = Library:Create('TextLabel', {
-			BackgroundTransparency = 1;
-			Size       = UDim2.new(1, 0, 1, 0);
-			Text       = Text;
-			TextColor3 = Library.FontColor;
-			TextSize   = 12;
-			Font       = Library.Font;
-			ZIndex     = 302;
-			Parent     = BtnInner;
-		});
-		Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
+local BtnIcon = Library:Create('TextLabel', {
+    BackgroundTransparency = 1;
+    Position  = UDim2.new(0, 6, 0, 0);
+    Size      = UDim2.new(0, 16, 1, 0);
+    Font      = Enum.Font.GothamBold;
+    Text      = '📋';
+    TextColor3 = Library.AccentColor;
+    TextSize  = 12;
+    ZIndex    = 303;
+    Parent    = BtnInner;
+});
+Library:AddToRegistry(BtnIcon, { TextColor3 = 'AccentColor' });
+
+local BtnDivider = Library:Create('Frame', {
+    BackgroundColor3       = Library.OutlineColor;
+    BackgroundTransparency = 0.4;
+    BorderSizePixel        = 0;
+    Position               = UDim2.new(0, 23, 0, 4);
+    Size                   = UDim2.new(0, 1, 1, -8);
+    ZIndex                 = 302;
+    Parent                 = BtnInner;
+});
+Library:AddToRegistry(BtnDivider, { BackgroundColor3 = 'OutlineColor' });
+
+local BtnLabel = Library:Create('TextLabel', {
+    BackgroundTransparency = 1;
+    Position  = UDim2.new(0, 28, 0, 0);
+    Size      = UDim2.new(1, -32, 1, 0);
+    Text      = Text;
+    TextColor3 = Library.FontColor;
+    TextSize  = 12;
+    TextScaled = true;
+    Font      = Library.Font;
+    ZIndex    = 302;
+    Parent    = BtnInner;
+});
+Library:Create('UITextSizeConstraint', { MinTextSize = 8; MaxTextSize = 12; Parent = BtnLabel; });
+Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 
 		local BtnScale = Instance.new('UIScale');
 		BtnScale.Scale  = 1;
@@ -3956,7 +3990,7 @@ function Library:CreateToggleButton(Text)
         BackgroundColor3 = Library.OutlineColor or Color3.fromRGB(60, 60, 60);
         BorderSizePixel  = 0;
         Position         = UDim2.fromOffset(10, 10);
-        Size             = UDim2.fromOffset(96, 28);
+Size             = UDim2.fromOffset(130, 28);
         ZIndex           = 300;
         Parent           = ScreenGui;
     });
@@ -5036,9 +5070,13 @@ end);
 
 		local tabTween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 
-		TabButton.MouseEnter:Connect(function()
-			if Blocker.BackgroundTransparency == 0 then return end;
-			pcall(function() TabHoverSound:Play() end);
+TabButton.MouseEnter:Connect(function()
+    if Blocker.BackgroundTransparency == 0 then return end;
+    local _now = tick()
+    if _now - Library._lastTabHoverSoundTime >= 0.22 then
+        Library._lastTabHoverSoundTime = _now
+        pcall(function() TabHoverSound:Play() end);
+    end
 			TweenService:Create(TabButtonLabel, tabTween, {
 				TextColor3 = Library.AccentColor;
 			}):Play();
@@ -5185,14 +5223,15 @@ end);
 				BackgroundColor3 = 'OutlineColor';
 			});
 
-			local BoxInner = Library:Create('Frame', {
-				BackgroundColor3 = Library.BackgroundColor;
-				BorderSizePixel  = 0;
-				Size             = UDim2.new(1, -2, 1, -2);
-				Position         = UDim2.new(0, 1, 0, 1);
-				ZIndex           = 4;
-				Parent           = BoxOuter;
-			});
+local BoxInner = Library:Create('Frame', {
+    BackgroundColor3 = Library.BackgroundColor;
+    BorderSizePixel  = 0;
+    Size             = UDim2.new(1, -2, 1, -2);
+    Position         = UDim2.new(0, 1, 0, 1);
+    ClipsDescendants = true;
+    ZIndex           = 4;
+    Parent           = BoxOuter;
+});
 
 			Library:Create('UICorner', {
 				CornerRadius = UDim.new(0, 3);
@@ -5254,10 +5293,10 @@ end);
 			Groupbox.Container = Container;
 			setmetatable(Groupbox, BaseGroupbox);
 
-			Groupbox:AddBlank(3);
-			Groupbox:Resize();
+Groupbox:AddBlank(6);
+Groupbox:Resize();
 
-			Tab.Groupboxes[Info.Name] = Groupbox;
+Tab.Groupboxes[Info.Name] = Groupbox;
 
 			return Groupbox;
 		end;
@@ -5633,146 +5672,253 @@ end;
 
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
-
--- ================================================================
---  Tool Panel Builder — themed floating panels for custom tools
--- ================================================================
 Library._ToolPanels = {}
 
 function Library:CreateToolPanel(config)
     local gui = Instance.new("ScreenGui")
     gui.Name = config.name or "ToolPanel"
     gui.ResetOnSpawn = false
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     gui.Enabled = false
     gui.Parent = CoreGui
 
-    local frame = Instance.new("Frame")
-    frame.AnchorPoint = config.anchor or Vector2.new(0.5, 0)
-    frame.BackgroundColor3 = Library.BackgroundColor
-    frame.BackgroundTransparency = 0.05
-    frame.BorderSizePixel = 0
-    frame.Position = config.position or UDim2.new(0.5, 0, 0.03, 0)
-    frame.Size = config.size or UDim2.new(0, 200, 0, 140)
-    frame.ClipsDescendants = true
-    frame.Parent = gui
-    do
-        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = frame
-        local s = Instance.new("UIStroke"); s.Color = Library.AccentColor; s.Thickness = 2; s.Parent = frame
-        s.Name = "AccentStroke"
-    end
+    local panelOuter = Library:Create('Frame', {
+        AnchorPoint      = config.anchor or Vector2.new(0.5, 0);
+        BackgroundColor3 = Library.OutlineColor;
+        BorderSizePixel  = 0;
+        Position         = config.position or UDim2.new(0.5, 0, 0.03, 0);
+        Size             = config.size or UDim2.new(0, 210, 0, 150);
+        Parent           = gui;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = panelOuter })
+    Library:AddToRegistry(panelOuter, { BackgroundColor3 = 'OutlineColor' })
 
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.AnchorPoint = Vector2.new(0.5, 0)
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0.5, 0, 0.02, 0)
-    title.Size = UDim2.new(0.92, 0, 0.13, 0)
-    title.Font = Library.BoldFont or Enum.Font.GothamBold
-    title.Text = config.title or "Tool"
-    title.TextColor3 = Library.AccentColor
-    title.TextScaled = true
-    title.TextTruncate = Enum.TextTruncate.AtEnd
-    title.Parent = frame
+    local shadow = Library:Create('Frame', {
+        BackgroundColor3       = Color3.new(0, 0, 0);
+        BackgroundTransparency = 0.55;
+        BorderSizePixel        = 0;
+        Position               = UDim2.new(0, -2, 0, 3);
+        Size                   = UDim2.new(1, 4, 1, 4);
+        ZIndex                 = panelOuter.ZIndex - 1;
+        Parent                 = panelOuter;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = shadow })
 
-    local status = Instance.new("TextLabel")
-    status.Name = "Status"
-    status.AnchorPoint = Vector2.new(0.5, 1)
-    status.BackgroundTransparency = 1
-    status.Position = UDim2.new(0.5, 0, 0.98, 0)
-    status.Size = UDim2.new(0.92, 0, 0.18, 0)
-    status.Font = Library.Font or Enum.Font.Gotham
-    status.Text = config.statusText or ""
-    status.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
-    status.TextScaled = true
-    status.TextWrapped = true
-    status.TextTruncate = Enum.TextTruncate.AtEnd
-    status.Parent = frame
+    local panelInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderSizePixel  = 0;
+        Position         = UDim2.new(0, 1, 0, 1);
+        Size             = UDim2.new(1, -2, 1, -2);
+        Parent           = panelOuter;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = panelInner })
+    Library:AddToRegistry(panelInner, { BackgroundColor3 = 'MainColor' })
 
-    local panel = {gui = gui, frame = frame, title = title, status = status}
+    local accentTop = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        BorderSizePixel  = 0;
+        Size             = UDim2.new(1, 0, 0, 2);
+        ZIndex           = 3;
+        Parent           = panelInner;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = accentTop })
+    Library:AddToRegistry(accentTop, { BackgroundColor3 = 'AccentColor' })
+
+    local accentBot = Library:Create('Frame', {
+        BackgroundColor3       = Library.AccentColor;
+        BackgroundTransparency = 0.75;
+        BorderSizePixel        = 0;
+        AnchorPoint            = Vector2.new(0, 1);
+        Position               = UDim2.new(0, 0, 1, 0);
+        Size                   = UDim2.new(1, 0, 0, 1);
+        ZIndex                 = 3;
+        Parent                 = panelInner;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = accentBot })
+    Library:AddToRegistry(accentBot, { BackgroundColor3 = 'AccentColor' })
+
+    local titleLabel = Library:CreateLabel({
+        Position       = UDim2.new(0, 8, 0, 4);
+        Size           = UDim2.new(1, -16, 0, 16);
+        TextSize       = 13;
+        Text           = config.title or "Tool";
+        TextXAlignment = Enum.TextXAlignment.Left;
+        ZIndex         = 4;
+        Parent         = panelInner;
+    })
+
+    local divider = Library:Create('Frame', {
+        BackgroundColor3       = Library.OutlineColor;
+        BackgroundTransparency = 0.4;
+        BorderSizePixel        = 0;
+        Position               = UDim2.new(0, 4, 0, 22);
+        Size                   = UDim2.new(1, -8, 0, 1);
+        ZIndex                 = 3;
+        Parent                 = panelInner;
+    })
+    Library:AddToRegistry(divider, { BackgroundColor3 = 'OutlineColor' })
+
+    local statusLabel = Library:CreateLabel({
+        AnchorPoint    = Vector2.new(0, 1);
+        Position       = UDim2.new(0, 6, 1, -5);
+        Size           = UDim2.new(1, -12, 0, 22);
+        TextSize       = 11;
+        Text           = config.statusText or "";
+        TextXAlignment = Enum.TextXAlignment.Left;
+        TextWrapped    = true;
+        ZIndex         = 4;
+        Parent         = panelInner;
+    })
+
+    local panel = {
+        gui    = gui;
+        frame  = panelInner;
+        title  = titleLabel;
+        status = statusLabel;
+        inner  = panelInner;
+        outer  = panelOuter;
+    }
     table.insert(Library._ToolPanels, panel)
     return panel
 end
 
 function Library:CreateToolInput(parent, yPos, placeholder)
-    local box = Instance.new("TextBox")
-    box.AnchorPoint = Vector2.new(0.5, 0)
-    box.BackgroundColor3 = Library.MainColor
-    box.BorderSizePixel = 0
-    box.Position = UDim2.new(0.5, 0, yPos, 0)
-    box.Size = UDim2.new(0.84, 0, 0.12, 0)
-    box.Font = Library.Font or Enum.Font.Gotham
-    box.PlaceholderText = placeholder or ""
-    box.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
-    box.Text = ""
-    box.TextColor3 = Library.FontColor or Color3.fromRGB(255, 255, 255)
-    box.TextScaled = true
-    box.ClearTextOnFocus = true
-    box.ClipsDescendants = true
-    box.Parent = parent
-    do
-        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = box
-        local s = Instance.new("UIStroke"); s.Color = Library.OutlineColor; s.Thickness = 1; s.Parent = box
-    end
+    local outerFrame = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BorderColor3     = Color3.new(0, 0, 0);
+        AnchorPoint      = Vector2.new(0.5, 0);
+        Position         = UDim2.new(0.5, 0, yPos, 0);
+        Size             = UDim2.new(0.88, 0, 0, 20);
+        ZIndex           = 5;
+        Parent           = parent;
+    })
+    local innerFrame = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3     = Library.OutlineColor;
+        BorderMode       = Enum.BorderMode.Inset;
+        Size             = UDim2.new(1, 0, 1, 0);
+        ZIndex           = 6;
+        Parent           = outerFrame;
+    })
+    Library:Create('UIGradient', {
+        Color    = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(1,1,1));
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(212,212,212));
+        });
+        Rotation = 90;
+        Parent   = innerFrame;
+    })
+    local box = Library:Create('TextBox', {
+        BackgroundTransparency = 1;
+        Position         = UDim2.new(0, 5, 0, 0);
+        Size             = UDim2.new(1, -5, 1, 0);
+        Font             = Library.Font;
+        PlaceholderText  = placeholder or "";
+        PlaceholderColor3 = Color3.fromRGB(120, 120, 120);
+        Text             = "";
+        TextColor3       = Library.FontColor;
+        TextSize         = 13;
+        TextXAlignment   = Enum.TextXAlignment.Left;
+        ZIndex           = 7;
+        Parent           = innerFrame;
+    })
+    Library:AddToRegistry(innerFrame, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor' })
+    Library:AddToRegistry(box, { TextColor3 = 'FontColor' })
+    Library:OnHighlight(outerFrame, outerFrame,
+        { BorderColor3 = 'AccentColor' },
+        { BorderColor3 = 'Black' }
+    )
     return box
 end
 
 function Library:CreateToolButton(parent, text, yPos, xPos, width, callback)
-    local btn = Instance.new("TextButton")
-    btn.AnchorPoint = Vector2.new(0, 0)
-    btn.BackgroundColor3 = Library.AccentColor
-    btn.BorderSizePixel = 0
-    btn.Position = UDim2.new(xPos, 0, yPos, 0)
-    btn.Size = UDim2.new(width or 0.44, 0, 0.1, 0)
-    btn.Font = Library.BoldFont or Enum.Font.GothamBold
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextScaled = true
-    btn.ClipsDescendants = true
-    btn.Parent = parent
-    do local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = btn end
+    local outer = Library:Create('Frame', {
+        Active           = true;
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BorderColor3     = Color3.new(0, 0, 0);
+        Position         = UDim2.new(xPos, 0, yPos, 0);
+        Size             = UDim2.new(width or 0.44, 0, 0, 20);
+        ZIndex           = 5;
+        Parent           = parent;
+    })
+    local inner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3     = Library.OutlineColor;
+        BorderMode       = Enum.BorderMode.Inset;
+        Size             = UDim2.new(1, 0, 1, 0);
+        ZIndex           = 6;
+        ClipsDescendants = true;
+        Parent           = outer;
+    })
+    Library:Create('UIGradient', {
+        Color    = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(1,1,1));
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(212,212,212));
+        });
+        Rotation = 90;
+        Parent   = inner;
+    })
+    local btn = Library:Create('TextButton', {
+        BackgroundTransparency = 1;
+        Size       = UDim2.new(1, 0, 1, 0);
+        Font       = Library.Font;
+        Text       = text;
+        TextColor3 = Library.FontColor;
+        TextScaled = true;
+        ZIndex     = 7;
+        Parent     = inner;
+    })
+    Library:Create('UITextSizeConstraint', {
+        MinTextSize = 9;
+        MaxTextSize = 13;
+        Parent      = btn;
+    })
+    Library:AddToRegistry(outer,  { BorderColor3 = 'Black' })
+    Library:AddToRegistry(inner,  { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor' })
+    Library:AddToRegistry(btn,    { TextColor3 = 'FontColor' })
+    Library:OnHighlight(outer, outer,
+        { BorderColor3 = 'AccentColor' },
+        { BorderColor3 = 'Black' }
+    )
     if callback then btn.MouseButton1Click:Connect(callback) end
     return btn
 end
 
 function Library:CreateToolLabel(parent, text, yPos)
-    local lbl = Instance.new("TextLabel")
-    lbl.AnchorPoint = Vector2.new(0.5, 0)
-    lbl.BackgroundColor3 = Library.MainColor
-    lbl.BackgroundTransparency = 0.3
-    lbl.BorderSizePixel = 0
-    lbl.Position = UDim2.new(0.5, 0, yPos, 0)
-    lbl.Size = UDim2.new(0.84, 0, 0.12, 0)
-    lbl.Font = Library.Font or Enum.Font.Gotham
-    lbl.Text = text
-    lbl.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
-    lbl.TextScaled = true
-    lbl.TextTruncate = Enum.TextTruncate.AtEnd
-    lbl.ClipsDescendants = true
-    lbl.Parent = parent
-    do local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = lbl end
+    local lbl = Library:CreateLabel({
+        AnchorPoint        = Vector2.new(0.5, 0);
+        BackgroundColor3   = Library.MainColor;
+        BackgroundTransparency = 0.35;
+        BorderSizePixel    = 0;
+        Position           = UDim2.new(0.5, 0, yPos, 0);
+        Size               = UDim2.new(0.88, 0, 0, 18);
+        TextSize           = 12;
+        Text               = text;
+        TextXAlignment     = Enum.TextXAlignment.Left;
+        ZIndex             = 5;
+        Parent             = parent;
+    })
+    Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = lbl })
+    Library:Create('UIPadding', {
+        PaddingLeft = UDim.new(0, 5);
+        Parent      = lbl;
+    })
     return lbl
 end
 
--- Theme update loop for tool panels
 task.defer(function()
     while not Library.Unloaded do
         for _, panel in ipairs(Library._ToolPanels) do
             pcall(function()
-                if panel.frame and panel.frame.Parent then
-                    panel.frame.BackgroundColor3 = Library.BackgroundColor
-                    local stroke = panel.frame:FindFirstChild("AccentStroke")
-                    if stroke then stroke.Color = Library.AccentColor end
+                if panel.outer and panel.outer.Parent then
+                    panel.outer.BackgroundColor3 = Library.OutlineColor
                 end
-                if panel.title and panel.title.Parent then
-                    panel.title.TextColor3 = Library.AccentColor
-                end
-                if panel.status and panel.status.Parent then
-                    panel.status.TextColor3 = Library.FontColor or Color3.fromRGB(200, 200, 200)
+                if panel.inner and panel.inner.Parent then
+                    panel.inner.BackgroundColor3 = Library.MainColor
                 end
             end)
         end
-        task.wait(1)
+        task.wait(2)
     end
 end)
 
