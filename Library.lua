@@ -4575,35 +4575,35 @@ end;
 			CurrentFps = FpsCount;
 			FpsCount = 0;
 			LastFpsTime = Now;
-		end;
 
-		local Elapsed = math.floor(Now - StartTime);
-		local Hours   = math.floor(Elapsed / 3600);
-		local Mins    = math.floor((Elapsed % 3600) / 60);
-		local Secs    = Elapsed % 60;
-		local UptimeStr;
+			local Elapsed = math.floor(Now - StartTime);
+			local Hours   = math.floor(Elapsed / 3600);
+			local Mins    = math.floor((Elapsed % 3600) / 60);
+			local Secs    = Elapsed % 60;
+			local UptimeStr;
 
-		if Hours > 0 then
-			UptimeStr = string.format('%dh %dm %ds', Hours, Mins, Secs);
-		elseif Mins > 0 then
-			UptimeStr = string.format('%dm %ds', Mins, Secs);
-		else
-			UptimeStr = Secs .. 's';
-		end;
-
-		pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
-		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. CurrentFps) end);
-
-		pcall(function()
-			local lp = Players.LocalPlayer;
-			if lp and typeof(lp.GetNetworkPing) == 'function' then
-				PingLabel:SetText('📶  Ping:  ' .. math.floor(lp:GetNetworkPing() * 1000) .. 'ms');
+			if Hours > 0 then
+				UptimeStr = string.format('%dh %dm %ds', Hours, Mins, Secs);
+			elseif Mins > 0 then
+				UptimeStr = string.format('%dm %ds', Mins, Secs);
+			else
+				UptimeStr = Secs .. 's';
 			end;
-		end);
 
-		pcall(function()
-			ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
-		end);
+			pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
+			pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. CurrentFps) end);
+
+			pcall(function()
+				local lp = Players.LocalPlayer;
+				if lp and typeof(lp.GetNetworkPing) == 'function' then
+					PingLabel:SetText('📶  Ping:  ' .. math.floor(lp:GetNetworkPing() * 1000) .. 'ms');
+				end;
+			end);
+
+			pcall(function()
+				ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
+			end);
+		end;
 
 		if Now - LastTipSwap >= 8 then
 			LastTipSwap = Now;
