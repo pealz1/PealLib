@@ -11,7 +11,7 @@ local Mouse = LocalPlayer:GetMouse();
 
 local Toggled = false;
 local _lastTouchX, _lastTouchY = 0, 0;
-_lastTabHoverSoundTime = 0;
+-- _lastTabHoverSoundTime: throttle for tab hover sounds (accessed via Library._lastTabHoverSoundTime)
 
 -- Track touch position globally so GetMousePosition always has a fresh value
 InputService.InputChanged:Connect(function(input)
@@ -61,6 +61,45 @@ local Library = {
 	Signals = {};
 	ScreenGui = ScreenGui;
 };
+
+Library._lastTabHoverSoundTime = 0;
+
+-- ══ Pre-cached TweenInfo objects (avoid allocating on every interaction) ══
+Library._TI_ToggleShrink  = TweenInfo.new(0.07, Enum.EasingStyle.Quad);
+Library._TI_ToggleBounce  = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_BtnShrink     = TweenInfo.new(0.06, Enum.EasingStyle.Quad);
+Library._TI_BtnBounce     = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_Fast          = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_Bounce        = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_TabActive     = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_ToggleFill    = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_DropdownArrow = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_NotifyIn      = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_NotifyOut     = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In);
+
+-- ══ Shared sound pool (one instance per sound ID, reused everywhere) ══
+Library._SoundPool = {};
+function Library:PlaySound(soundId, volume)
+	local key = soundId .. '_' .. tostring(volume or 0.2);
+	local snd = Library._SoundPool[key];
+	if not snd then
+		snd = Instance.new('Sound');
+		snd.SoundId            = soundId;
+		snd.Volume             = volume or 0.2;
+		snd.RollOffMaxDistance = 0;
+		snd.Parent             = ScreenGui;
+		Library._SoundPool[key] = snd;
+	end;
+	pcall(function() snd:Play() end);
+end;
+
+function Library:PlayClickSound()
+	Library:PlaySound('rbxassetid://6895079853', 0.18);
+end;
+
+function Library:PlayHoverSound()
+	Library:PlaySound('rbxassetid://6026984224', 0.1);
+end;
 
 local RainbowStep = 0
 local Hue = 0
@@ -260,28 +299,27 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 		TextColor3 = 'FontColor',
 	});
 
-	local IsHovering = false
+	local _tooltipConn = nil;
 
 	HoverInstance.MouseEnter:Connect(function()
 		if Library:MouseIsOverOpenedFrame() then
 			return
 		end
 
-		IsHovering = true
-
 		local mx, my = Library:GetMousePosition()
 		Tooltip.Position = UDim2.fromOffset(mx + 15, my + 12)
 		Tooltip.Visible = true
 
-		while IsHovering do
-			RunService.Heartbeat:Wait()
+		-- Use a single Heartbeat connection instead of a while-loop
+		if _tooltipConn then _tooltipConn:Disconnect() end;
+		_tooltipConn = RunService.Heartbeat:Connect(function()
 			mx, my = Library:GetMousePosition()
 			Tooltip.Position = UDim2.fromOffset(mx + 15, my + 12)
-		end
+		end);
 	end)
 
 	HoverInstance.MouseLeave:Connect(function()
-		IsHovering = false
+		if _tooltipConn then _tooltipConn:Disconnect(); _tooltipConn = nil; end;
 		Tooltip.Visible = false
 	end)
 end
@@ -387,16 +425,24 @@ function Library:RemoveFromRegistry(Instance)
 	local Data = Library.RegistryMap[Instance];
 
 	if Data then
-		for Idx = #Library.Registry, 1, -1 do
-			if Library.Registry[Idx] == Data then
-				table.remove(Library.Registry, Idx);
+		-- Use table.find for O(1)-ish removal instead of full scan
+		local regIdx = table.find(Library.Registry, Data);
+		if regIdx then
+			-- Swap-remove: move last element into this slot (avoids shifting)
+			local last = #Library.Registry;
+			if regIdx ~= last then
+				Library.Registry[regIdx] = Library.Registry[last];
 			end;
+			Library.Registry[last] = nil;
 		end;
 
-		for Idx = #Library.HudRegistry, 1, -1 do
-			if Library.HudRegistry[Idx] == Data then
-				table.remove(Library.HudRegistry, Idx);
+		local hudIdx = table.find(Library.HudRegistry, Data);
+		if hudIdx then
+			local last = #Library.HudRegistry;
+			if hudIdx ~= last then
+				Library.HudRegistry[hudIdx] = Library.HudRegistry[last];
 			end;
+			Library.HudRegistry[last] = nil;
 		end;
 
 		Library.RegistryMap[Instance] = nil;
@@ -420,10 +466,31 @@ function Library:GiveSignal(Signal)
 end
 
 function Library:Unload()
+	Library.Unloaded = true;
+
 	for Idx = #Library.Signals, 1, -1 do
 		local Connection = table.remove(Library.Signals, Idx)
 		Connection:Disconnect()
 	end
+
+	-- Clean up pooled sounds
+	for key, snd in next, Library._SoundPool do
+		snd:Destroy();
+		Library._SoundPool[key] = nil;
+	end;
+
+	-- Clean up fade proxy
+	if Library._FadeProxy then
+		Library._FadeProxy:Destroy();
+		Library._FadeProxy = nil;
+	end;
+	Library._FadeEntries = nil;
+	Library._TransparencyCache = {};
+
+	-- Clear registry
+	table.clear(Library.Registry);
+	table.clear(Library.RegistryMap);
+	table.clear(Library.HudRegistry);
 
 	if Library.OnUnload then
 		Library.OnUnload()
@@ -440,6 +507,12 @@ Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
 	if Library.RegistryMap[Instance] then
 		Library:RemoveFromRegistry(Instance);
 	end;
+	-- Clean up fade cache so destroyed instances don't leak memory
+	if Library._TransparencyCache and Library._TransparencyCache[Instance] then
+		Library._TransparencyCache[Instance] = nil;
+	end;
+	-- Invalidate fade entries so they get rebuilt on next toggle
+	Library._FadeEntries = nil;
 end))
 
 local BaseAddons = {};
@@ -1607,9 +1680,9 @@ end
 
 				local _sc = Button.Outer:FindFirstChildWhichIsA('UIScale');
 				if _sc then
-					TweenService:Create(_sc, TweenInfo.new(0.06, Enum.EasingStyle.Quad), { Scale = 0.95 }):Play();
+					TweenService:Create(_sc, Library._TI_BtnShrink, { Scale = 0.95 }):Play();
 					task.delay(0.08, function()
-						TweenService:Create(_sc, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
+						TweenService:Create(_sc, Library._TI_BtnBounce, { Scale = 1 }):Play();
 					end);
 				end;
 
@@ -2359,7 +2432,7 @@ function Toggle:Display()
 	local targetBG     = Toggle.Value and Library.AccentColor     or Library.MainColor;
 	local targetBorder = Toggle.Value and Library.AccentColorDark  or Library.OutlineColor;
 
-	TweenService:Create(ToggleInner, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(ToggleInner, Library._TI_ToggleFill, {
 		BackgroundColor3 = targetBG;
 	}):Play();
 
@@ -2391,21 +2464,17 @@ end;
 			Library:UpdateDependencyBoxes();
 		end;
 
-local _ToggleClickSfx = Instance.new('Sound');
-_ToggleClickSfx.SoundId            = 'rbxassetid://6895079853';
-_ToggleClickSfx.Volume             = 0.18;
-_ToggleClickSfx.RollOffMaxDistance = 0;
-_ToggleClickSfx.Parent             = ToggleOuter;
+-- Persistent UIScale for bounce — reused across clicks (no allocation per click)
+local _ToggleBounceScale = Instance.new('UIScale');
+_ToggleBounceScale.Scale  = 1;
+_ToggleBounceScale.Parent = ToggleOuter;
 
 ToggleRegion.InputBegan:Connect(function(Input)
 	if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
-		pcall(function() _ToggleClickSfx:Play() end);
-		-- Tiny bounce on the toggle box
-		local _ts = Instance.new('UIScale'); _ts.Scale = 1; _ts.Parent = ToggleOuter;
-		TweenService:Create(_ts, TweenInfo.new(0.07, Enum.EasingStyle.Quad), { Scale = 0.88 }):Play();
+		Library:PlayClickSound();
+		TweenService:Create(_ToggleBounceScale, Library._TI_ToggleShrink, { Scale = 0.88 }):Play();
 		task.delay(0.07, function()
-			TweenService:Create(_ts, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
-			task.delay(0.2, function() _ts:Destroy() end);
+			TweenService:Create(_ToggleBounceScale, Library._TI_ToggleBounce, { Scale = 1 }):Play();
 		end);
 		Toggle:SetValue(not Toggle.Value);
 		Library:AttemptSave();
@@ -2999,7 +3068,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 function Dropdown:OpenDropdown()
 	ListOuter.Visible = true;
 	Library.OpenedFrames[ListOuter] = true;
-	TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(DropdownArrow, Library._TI_DropdownArrow, {
 		Rotation = 180;
 	}):Play();
 end;
@@ -3007,7 +3076,7 @@ end;
 function Dropdown:CloseDropdown()
 	ListOuter.Visible = false;
 	Library.OpenedFrames[ListOuter] = nil;
-	TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(DropdownArrow, Library._TI_DropdownArrow, {
 		Rotation = 0;
 	}):Play();
 end;
@@ -3052,7 +3121,7 @@ end;
 			end;
 		end);
 
-		InputService.InputBegan:Connect(function(Input)
+		Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				local AbsPos, AbsSize = ListOuter.AbsolutePosition, ListOuter.AbsoluteSize;
 				local px, py = Input.Position.X, Input.Position.Y;
@@ -3063,7 +3132,7 @@ end;
 					Dropdown:CloseDropdown();
 				end;
 			end;
-		end);
+		end));
 
 		Dropdown:BuildDropdownList();
 		Dropdown:Display();
@@ -3366,14 +3435,9 @@ local WatermarkScale = Instance.new('UIScale');
 WatermarkScale.Scale  = 1;
 WatermarkScale.Parent = WatermarkOuter;
 
-local WmHoverSound = Instance.new('Sound');
-WmHoverSound.SoundId             = 'rbxassetid://6026984224';
-WmHoverSound.Volume              = 0.12;
-WmHoverSound.RollOffMaxDistance  = 0;
-WmHoverSound.Parent              = WatermarkOuter;
-
-local wmFastTween   = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-local wmBounceTween = TweenInfo.new(0.25, Enum.EasingStyle.Back,  Enum.EasingDirection.Out);
+-- Sound instances pooled via Library:PlayHoverSound() / Library:PlayClickSound()
+local wmFastTween   = Library._TI_Fast;
+local wmBounceTween = Library._TI_Bounce;
 
 local wmHovered = false;
 
@@ -3388,7 +3452,7 @@ end;
 WatermarkOuter.MouseEnter:Connect(function()
 	if wmHovered then return end;
 	wmHovered = true;
-	pcall(function() WmHoverSound:Play() end);
+	Library:PlayHoverSound();
 
 	TweenService:Create(WatermarkInner, wmFastTween, {
 		BackgroundColor3 = WmLighten(Library.MainColor, 0.05);
@@ -3421,7 +3485,7 @@ WatermarkOuter.MouseLeave:Connect(function()
 end);
 
 WatermarkOuter.TouchTap:Connect(function()
-	pcall(function() WmHoverSound:Play() end);
+	Library:PlayHoverSound();
 	TweenService:Create(WatermarkInner, wmFastTween, { BackgroundColor3 = WmLighten(Library.MainColor, 0.05) }):Play();
 	TweenService:Create(WatermarkAccentBar, wmFastTween, { Size = UDim2.new(1, 0, 0, 3) }):Play();
 	TweenService:Create(WatermarkScale, wmFastTween, { Scale = 1.04 }):Play();
@@ -3903,16 +3967,8 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 		BtnScale.Scale  = 1;
 		BtnScale.Parent = BtnOuter;
 
-		local _BtnHoverSfx = Instance.new('Sound');
-		_BtnHoverSfx.SoundId = 'rbxassetid://6026984224'; _BtnHoverSfx.Volume = 0.12;
-		_BtnHoverSfx.RollOffMaxDistance = 0; _BtnHoverSfx.Parent = BtnOuter;
-
-		local _BtnClickSfx = Instance.new('Sound');
-		_BtnClickSfx.SoundId = 'rbxassetid://6895079853'; _BtnClickSfx.Volume = 0.3;
-		_BtnClickSfx.RollOffMaxDistance = 0; _BtnClickSfx.Parent = BtnOuter;
-
-		local _ftw = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-		local _btw = TweenInfo.new(0.25, Enum.EasingStyle.Back,  Enum.EasingDirection.Out);
+		local _ftw = Library._TI_Fast;
+		local _btw = Library._TI_Bounce;
 
 		local _bHov  = false;
 		local _bDrag = false;
@@ -3924,7 +3980,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 
 		BtnOuter.MouseEnter:Connect(function()
 			if _bHov then return end; _bHov = true;
-			pcall(function() _BtnHoverSfx:Play() end);
+			Library:PlayHoverSound();
 			TweenService:Create(BtnScale, _ftw, { Scale = 1.04 }):Play();
 			TweenService:Create(BtnInner, _ftw, { BackgroundColor3 = _lighten(Library.MainColor, 0.05) }):Play();
 		end);
@@ -3939,7 +3995,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 			and Input.UserInputType ~= Enum.UserInputType.Touch then return end;
 
 			_bDrag = false;
-			TweenService:Create(BtnScale, TweenInfo.new(0.07, Enum.EasingStyle.Quad), { Scale = 0.91 }):Play();
+			TweenService:Create(BtnScale, Library._TI_ToggleShrink, { Scale = 0.91 }):Play();
 
 			local SX = Input.Position.X; local SY = Input.Position.Y;
 			local OX = Input.Position.X - BtnOuter.AbsolutePosition.X;
@@ -3963,7 +4019,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 				TweenService:Create(BtnScale, _btw, { Scale = _bHov and 1.04 or 1 }):Play();
 				TweenService:Create(BtnInner, _ftw, { BackgroundColor3 = Library.MainColor }):Play();
 				if not _bDrag then
-					pcall(function() _BtnClickSfx:Play() end);
+					Library:PlayClickSound();
 					Popout:Toggle();
 				end;
 				_bDrag = false;
@@ -3980,8 +4036,8 @@ function Library:CreateToggleButton(Text)
     Text = Text or 'Menu';
 
     local TweenService = game:GetService('TweenService');
-    local fastTween  = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-    local bounceTween = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+    local fastTween  = Library._TI_Fast;
+    local bounceTween = Library._TI_Bounce;
 
     local ButtonOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.OutlineColor or Color3.fromRGB(60, 60, 60);
@@ -4123,17 +4179,7 @@ Size             = UDim2.fromOffset(130, 28);
     Scale.Scale  = 1;
     Scale.Parent = ButtonOuter;
 
-    local ClickSound = Instance.new('Sound');
-    ClickSound.SoundId  = 'rbxassetid://6895079853';
-    ClickSound.Volume   = 0.35;
-    ClickSound.RollOffMaxDistance = 0;
-    ClickSound.Parent   = ButtonOuter;
-
-    local HoverSound = Instance.new('Sound');
-    HoverSound.SoundId  = 'rbxassetid://6026984224';
-    HoverSound.Volume   = 0.12;
-    HoverSound.RollOffMaxDistance = 0;
-    HoverSound.Parent   = ButtonOuter;
+    -- Sounds pooled via Library:PlayClickSound() / Library:PlayHoverSound()
 
     local isHovered  = false;
     local isDragging = false;
@@ -4149,7 +4195,7 @@ Size             = UDim2.fromOffset(130, 28);
     ButtonOuter.MouseEnter:Connect(function()
         if isHovered then return end;
         isHovered = true;
-        pcall(function() HoverSound:Play() end);
+        Library:PlayHoverSound();
 
         TweenService:Create(ButtonInner, fastTween, {
             BackgroundColor3 = lighten(Library.MainColor, 0.05);
@@ -4210,11 +4256,11 @@ end;
 
         isDragging = false;
 
-        TweenService:Create(Scale, TweenInfo.new(0.07, Enum.EasingStyle.Quad), {
+        TweenService:Create(Scale, Library._TI_ToggleShrink, {
             Scale = 0.91;
         }):Play();
 
-        TweenService:Create(ButtonInner, TweenInfo.new(0.07), {
+        TweenService:Create(ButtonInner, Library._TI_ToggleShrink, {
             BackgroundColor3 = lighten(Library.MainColor, -0.04);
         }):Play();
 
@@ -4261,7 +4307,7 @@ end;
             }):Play();
 
             if not isDragging then
-                pcall(function() ClickSound:Play() end);
+                Library:PlayClickSound();
 
                 TweenService:Create(AccentBar, TweenInfo.new(0.05), {
                     BackgroundColor3 = Color3.new(1, 1, 1);
@@ -4700,13 +4746,13 @@ function Library:Notify(Text, Time)
 	}, true);
 
 NotifyOuter.Size = UDim2.new(0, 0, 0, YSize);
-TweenService:Create(NotifyOuter, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
 	Size = UDim2.new(0, XSize + 8 + 4, 0, YSize);
 }):Play();
 
 task.spawn(function()
 	task.wait(Time or 5);
-	TweenService:Create(NotifyOuter, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+	TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
 		Size = UDim2.new(0, 0, 0, YSize);
 	}):Play();
 	task.wait(0.3);
@@ -5049,26 +5095,15 @@ end);
 			BackgroundColor3 = 'AccentColor';
 		});
 
-		local TabHoverSound = Instance.new('Sound');
-		TabHoverSound.SoundId            = 'rbxassetid://6026984224';
-		TabHoverSound.Volume             = 0.1;
-		TabHoverSound.RollOffMaxDistance = 0;
-		TabHoverSound.Parent             = TabButton;
-
-		local TabClickSound = Instance.new('Sound');
-		TabClickSound.SoundId            = 'rbxassetid://6895079853';
-		TabClickSound.Volume             = 0.2;
-		TabClickSound.RollOffMaxDistance = 0;
-		TabClickSound.Parent             = TabButton;
-
-		local tabTween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+		-- Sounds pooled via Library:PlayHoverSound() / Library:PlayClickSound()
+		local tabTween = Library._TI_TabActive;
 
 TabButton.MouseEnter:Connect(function()
     if Blocker.BackgroundTransparency == 0 then return end;
     local _now = tick()
     if _now - Library._lastTabHoverSoundTime >= 0.22 then
         Library._lastTabHoverSoundTime = _now
-        pcall(function() TabHoverSound:Play() end);
+        Library:PlayHoverSound();
     end
 			TweenService:Create(TabButtonLabel, tabTween, {
 				TextColor3 = Library.AccentColor;
@@ -5086,7 +5121,7 @@ TabButton.MouseEnter:Connect(function()
 
 		TabButton.TouchTap:Connect(function()
 			if Blocker.BackgroundTransparency == 0 then return end;
-			pcall(function() TabHoverSound:Play() end);
+			Library:PlayHoverSound();
 			TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.AccentColor }):Play();
 			task.delay(0.2, function()
 				TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.FontColor }):Play();
@@ -5147,14 +5182,14 @@ TabButton.MouseEnter:Connect(function()
 			end);
 		end;]]
 
-		local tabActiveTween = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+		local tabActiveTween = Library._TI_TabActive;
 
 		function Tab:ShowTab()
 			for _, Tab in next, Window.Tabs do
 				Tab:HideTab();
 			end;
 
-			pcall(function() TabClickSound:Play() end);
+			Library:PlayClickSound();
 
 			TweenService:Create(Blocker, tabActiveTween, {
 				BackgroundTransparency = 0;
@@ -5528,7 +5563,7 @@ Tab.Groupboxes[Info.Name] = Groupbox;
 		Parent = ScreenGui;
 	});
 
-local TransparencyCache = {};
+Library._TransparencyCache = Library._TransparencyCache or {}; local TransparencyCache = Library._TransparencyCache;
 -- Toggled boolean moved to start of script
 local Fading = false;
 
@@ -5587,41 +5622,83 @@ function Library:Toggle()
 			end);
 		end;
 
-		for _, Desc in next, Outer:GetDescendants() do
-			local Properties = {};
+		-- ── Optimized fade: single proxy tween drives ALL transparencies ──
+		-- Build cache once on first toggle; reuse on subsequent toggles.
+		if not Library._FadeEntries then
+			Library._FadeEntries = {};
+			for _, Desc in next, Outer:GetDescendants() do
+				local Props = {};
 
-			if Desc:IsA('ImageLabel') then
-				table.insert(Properties, 'ImageTransparency');
-				table.insert(Properties, 'BackgroundTransparency');
-			elseif Desc:IsA('TextLabel') or Desc:IsA('TextBox') then
-				table.insert(Properties, 'TextTransparency');
-			elseif Desc:IsA('Frame') or Desc:IsA('ScrollingFrame') then
-				table.insert(Properties, 'BackgroundTransparency');
-			elseif Desc:IsA('UIStroke') then
-				table.insert(Properties, 'Transparency');
-			end;
-
-			local Cache = TransparencyCache[Desc];
-
-			if (not Cache) then
-				Cache = {};
-				TransparencyCache[Desc] = Cache;
-			end;
-
-			for _, Prop in next, Properties do
-				if not Cache[Prop] then
-					Cache[Prop] = Desc[Prop];
+				if Desc:IsA('ImageLabel') then
+					Props[#Props+1] = 'ImageTransparency';
+					Props[#Props+1] = 'BackgroundTransparency';
+				elseif Desc:IsA('TextLabel') or Desc:IsA('TextBox') then
+					Props[#Props+1] = 'TextTransparency';
+				elseif Desc:IsA('Frame') or Desc:IsA('ScrollingFrame') then
+					Props[#Props+1] = 'BackgroundTransparency';
+				elseif Desc:IsA('UIStroke') then
+					Props[#Props+1] = 'Transparency';
 				end;
 
-				if Cache[Prop] == 1 then
-					continue;
-				end;
+				if #Props > 0 then
+					local Cache = TransparencyCache[Desc];
+					if not Cache then
+						Cache = {};
+						TransparencyCache[Desc] = Cache;
+					end;
 
-				TweenService:Create(Desc, TweenInfo.new(FadeTime, Enum.EasingStyle.Linear), { [Prop] = Toggled and Cache[Prop] or 1 }):Play();
+					for _, Prop in next, Props do
+						if not Cache[Prop] then
+							Cache[Prop] = Desc[Prop];
+						end;
+						-- Only track entries that actually need animation
+						if Cache[Prop] ~= 1 then
+							Library._FadeEntries[#Library._FadeEntries+1] = { Desc, Prop, Cache[Prop] };
+						end;
+					end;
+				end;
 			end;
 		end;
 
+		-- Single proxy NumberValue drives the fade via one tween
+		if not Library._FadeProxy then
+			Library._FadeProxy = Instance.new('NumberValue');
+			Library._FadeProxy.Parent = ScreenGui;
+		end;
+
+		local proxy = Library._FadeProxy;
+		proxy.Value = Toggled and 1 or 0;
+
+		local entries = Library._FadeEntries;
+		local targetAlpha = Toggled and 0 or 1; -- 0 = show (use cached), 1 = hide
+
+		local fadeConn;
+		fadeConn = proxy:GetPropertyChangedSignal('Value'):Connect(function()
+			local alpha = proxy.Value; -- 0→1 = showing→hiding
+			for i = 1, #entries do
+				local entry = entries[i];
+				local desc, prop, cached = entry[1], entry[2], entry[3];
+				if desc.Parent then
+					desc[prop] = cached + (1 - cached) * alpha;
+				end;
+			end;
+		end);
+
+		TweenService:Create(proxy, TweenInfo.new(FadeTime, Enum.EasingStyle.Linear), {
+			Value = targetAlpha;
+		}):Play();
+
 		task.wait(FadeTime);
+		fadeConn:Disconnect();
+
+		-- Snap final values
+		for i = 1, #entries do
+			local entry = entries[i];
+			local desc, prop, cached = entry[1], entry[2], entry[3];
+			if desc.Parent then
+				desc[prop] = Toggled and cached or 1;
+			end;
+		end;
 
 		Outer.Visible = Toggled;
 
@@ -5929,21 +6006,8 @@ function Library:CreateToolImagePreview(parent, yPos)
     return preview
 end
 
-task.defer(function()
-    while not Library.Unloaded do
-        for _, panel in ipairs(Library._ToolPanels) do
-            pcall(function()
-                if panel.outer and panel.outer.Parent then
-                    panel.outer.BackgroundColor3 = Library.OutlineColor
-                end
-                if panel.inner and panel.inner.Parent then
-                    panel.inner.BackgroundColor3 = Library.MainColor
-                end
-            end)
-        end
-        task.wait(2)
-    end
-end)
+-- Tool panels sync colors via registry (AddToRegistry) instead of polling loop.
+-- No infinite loop needed — UpdateColorsUsingRegistry handles it.
 
 getgenv().Library = Library
 return Library
