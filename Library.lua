@@ -2394,7 +2394,7 @@ end
 			Text = Info.Text;
 			TextXAlignment = Enum.TextXAlignment.Left;
 			TextTruncate = Enum.TextTruncate.AtEnd;
-			ClipsDescendants = true;
+			ClipsDescendants = false;
 			ZIndex = 6;
 			Parent = ToggleInner;
 		});
