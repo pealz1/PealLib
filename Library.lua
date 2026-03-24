@@ -14,12 +14,12 @@ local _lastTouchX, _lastTouchY = 0, 0;
 -- _lastTabHoverSoundTime: throttle for tab hover sounds (accessed via Library._lastTabHoverSoundTime)
 
 -- Track touch position globally so GetMousePosition always has a fresh value
-InputService.InputChanged:Connect(function(input)
+local _touchChangedConn = InputService.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
 		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
 	end;
 end);
-InputService.InputBegan:Connect(function(input)
+local _touchBeganConn = InputService.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
 		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
 	end;
@@ -107,7 +107,7 @@ local Hue = 0
 table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
 	RainbowStep = RainbowStep + Delta
 
-	if RainbowStep >= (1 / 60) then
+	if RainbowStep >= (1 / 20) then
 		RainbowStep = 0
 
 		Hue = Hue + (1 / 400);
@@ -301,7 +301,7 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 
 	local _tooltipConn = nil;
 
-	HoverInstance.MouseEnter:Connect(function()
+	local _enterConn = HoverInstance.MouseEnter:Connect(function()
 		if Library:MouseIsOverOpenedFrame() then
 			return
 		end
@@ -318,10 +318,13 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 		end);
 	end)
 
-	HoverInstance.MouseLeave:Connect(function()
+	local _leaveConn = HoverInstance.MouseLeave:Connect(function()
 		if _tooltipConn then _tooltipConn:Disconnect(); _tooltipConn = nil; end;
 		Tooltip.Visible = false
 	end)
+
+	Library:GiveSignal(_enterConn)
+	Library:GiveSignal(_leaveConn)
 end
 
 function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
@@ -486,6 +489,9 @@ function Library:Unload()
 	end;
 	Library._FadeEntries = nil;
 	Library._TransparencyCache = {};
+
+	if _touchChangedConn then _touchChangedConn:Disconnect(); _touchChangedConn = nil; end;
+	if _touchBeganConn then _touchBeganConn:Disconnect(); _touchBeganConn = nil; end;
 
 	-- Clear registry
 	table.clear(Library.Registry);
@@ -5583,6 +5589,32 @@ function Library:Toggle()
 
 		if Toggled then
 			Outer.Visible = true;
+
+			-- Remove any leftover open-scale from a previous toggle
+			local _prev = Outer:FindFirstChild('__OpenScale')
+			if _prev then _prev:Destroy() end
+			local _openScale = Instance.new('UIScale')
+			_openScale.Name   = '__OpenScale'
+			_openScale.Parent = Outer
+
+			local _origPos = Outer.Position
+
+			if not Library._hasOpened then
+				-- First execute: dramatic full reveal from center
+				Library._hasOpened = true
+				_openScale.Scale = 0.04
+				Outer.Position = UDim2.new(_origPos.X.Scale, _origPos.X.Offset, _origPos.Y.Scale, _origPos.Y.Offset + 30)
+				TweenService:Create(_openScale, TweenInfo.new(0.48, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				TweenService:Create(Outer,      TweenInfo.new(0.38, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = _origPos }):Play()
+				task.delay(0.52, function() pcall(function() if _openScale.Parent then _openScale:Destroy() end end) end)
+			else
+				-- Re-open (Open UI button / keybind): quick bounce
+				_openScale.Scale = 0.88
+				Outer.Position = UDim2.new(_origPos.X.Scale, _origPos.X.Offset, _origPos.Y.Scale, _origPos.Y.Offset + 18)
+				TweenService:Create(_openScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				TweenService:Create(Outer,      TweenInfo.new(0.20, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = _origPos }):Play()
+				task.delay(0.26, function() pcall(function() if _openScale.Parent then _openScale:Destroy() end end) end)
+			end
 
 			task.spawn(function()
 				local State = InputService.MouseIconEnabled;
