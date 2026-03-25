@@ -314,6 +314,10 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 		if _tooltipConn then _tooltipConn:Disconnect() end;
 		_tooltipConn = RunService.Heartbeat:Connect(function()
 			mx, my = Library:GetMousePosition()
+			if Library.WindowOuter and not Library:IsMouseOverFrame(Library.WindowOuter) then
+				Tooltip.Visible = false
+				return
+			end
 			Tooltip.Position = UDim2.fromOffset(mx + 15, my + 12)
 		end);
 	end)
@@ -454,13 +458,17 @@ end;
 
 function Library:UpdateColorsUsingRegistry()
 	for Idx, Object in next, Library.Registry do
-		for Property, ColorIdx in next, Object.Properties do
-			if type(ColorIdx) == 'string' then
-				Object.Instance[Property] = Library[ColorIdx];
-			elseif type(ColorIdx) == 'function' then
-				Object.Instance[Property] = ColorIdx()
-			end
-		end;
+		if Object and Object.Instance and Object.Instance.Parent then
+			for Property, ColorIdx in next, Object.Properties do
+				pcall(function()
+					if type(ColorIdx) == 'string' then
+						Object.Instance[Property] = Library[ColorIdx];
+					elseif type(ColorIdx) == 'function' then
+						Object.Instance[Property] = ColorIdx()
+					end
+				end)
+			end;
+		end
 	end;
 end;
 
@@ -1720,6 +1728,11 @@ end
 
 		InitEvents(Button)
 
+		function Button:SetText(text)
+			Button.Text = text
+			Button.Label.Text = text
+		end
+
 		function Button:AddTooltip(tooltip)
 			if type(tooltip) == 'string' then
 				Library:AddToolTip(tooltip, self.Outer)
@@ -1738,8 +1751,13 @@ end
 			SubButton.Outer, SubButton.Inner, SubButton.Label = CreateBaseButton(SubButton)
 
 			SubButton.Outer.Position = UDim2.new(1, 3, 0, 0)
-			SubButton.Outer.Size = UDim2.fromOffset(self.Outer.AbsoluteSize.X - 2, self.Outer.AbsoluteSize.Y)
+			SubButton.Outer.Size = UDim2.new(1, 0, 1, 0)
 			SubButton.Outer.Parent = self.Outer
+
+			function SubButton:SetText(text)
+				SubButton.Text = text
+				SubButton.Label.Text = text
+			end
 
 			function SubButton:AddTooltip(tooltip)
 				if type(tooltip) == 'string' then
@@ -2370,7 +2388,7 @@ end
 		local ToggleOuter = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BorderColor3 = Color3.new(0, 0, 0);
-			Size = UDim2.new(0, 13, 0, 13);
+			Size = UDim2.new(0, 16, 0, 16);
 			ZIndex = 5;
 			Parent = Container;
 		});
@@ -3272,8 +3290,9 @@ end;
 do
 	Library.NotificationArea = Library:Create('Frame', {
 		BackgroundTransparency = 1;
-		Position = UDim2.new(0, 0, 0, 40);
-		Size = UDim2.new(0, 300, 0, 200);
+		AnchorPoint = Vector2.new(1, 0);
+		Position = UDim2.new(1, -10, 0, 55);
+		Size = UDim2.new(0, 340, 1, -65);
 		ZIndex = 100;
 		Parent = ScreenGui;
 	});
@@ -4041,7 +4060,6 @@ end;
 function Library:CreateToggleButton(Text)
     Text = Text or 'Menu';
 
-    local TweenService = game:GetService('TweenService');
     local fastTween  = Library._TI_Fast;
     local bounceTween = Library._TI_Bounce;
 
@@ -4275,8 +4293,7 @@ end;
         local ObjX   = Input.Position.X - ButtonOuter.AbsolutePosition.X;
         local ObjY   = Input.Position.Y - ButtonOuter.AbsolutePosition.Y;
 
-		local UIS = game:GetService('UserInputService');
-		local moved = UIS.InputChanged:Connect(function(changed)
+		local moved = InputService.InputChanged:Connect(function(changed)
     	if changed.UserInputType ~= Enum.UserInputType.MouseMovement
     	and changed.UserInputType ~= Enum.UserInputType.Touch then return end;
 
@@ -4296,7 +4313,7 @@ end;
 		end);
 
         local releaseConn;
-        releaseConn = game:GetService('UserInputService').InputEnded:Connect(function(endInput)
+        releaseConn = InputService.InputEnded:Connect(function(endInput)
             if endInput ~= Input then return end;
             releaseConn:Disconnect();
 
@@ -4604,8 +4621,7 @@ end;
 	local TipIndex  = 1;
 	local LastTipSwap = tick();
 
-	local RunService = game:GetService('RunService');
-	local Players    = game:GetService('Players');
+	-- use top-level cached services
 
 	local WelcomeMessages = {
 		'✦  Welcome to ' .. ScriptName .. '  ✦',
@@ -4674,13 +4690,13 @@ end;
 end;
 
 function Library:Notify(Text, Time)
-	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
+	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 15);
 
-	YSize = YSize + 7
+	YSize = YSize + 14
 
 	local NotifyOuter = Library:Create('Frame', {
 		BorderColor3 = Color3.new(0, 0, 0);
-		Position = UDim2.new(0, 100, 0, 10);
+		Position = UDim2.new(0, 0, 0, 0);
 		Size = UDim2.new(0, 0, 0, YSize);
 		ClipsDescendants = true;
 		ZIndex = 100;
@@ -4729,11 +4745,11 @@ function Library:Notify(Text, Time)
 	});
 
 	local NotifyLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 4, 0, 0);
-		Size = UDim2.new(1, -4, 1, 0);
+		Position = UDim2.new(0, 8, 0, 0);
+		Size = UDim2.new(1, -10, 1, 0);
 		Text = Text;
 		TextXAlignment = Enum.TextXAlignment.Left;
-		TextSize = 14;
+		TextSize = 15;
 		ZIndex = 103;
 		Parent = InnerFrame;
 	});
@@ -4753,7 +4769,7 @@ function Library:Notify(Text, Time)
 
 NotifyOuter.Size = UDim2.new(0, 0, 0, YSize);
 TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
-	Size = UDim2.new(0, XSize + 8 + 4, 0, YSize);
+	Size = UDim2.new(0, math.max(XSize + 22, 180), 0, YSize);
 }):Play();
 
 task.spawn(function()
@@ -4813,6 +4829,7 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'OutlineColor';
 	});
 
+	Library.WindowOuter = Outer;
 	Library:MakeDraggable(Outer, 30);
 
 	local Inner = Library:Create('Frame', {
@@ -5106,11 +5123,6 @@ end);
 
 TabButton.MouseEnter:Connect(function()
     if Blocker.BackgroundTransparency == 0 then return end;
-    local _now = tick()
-    if _now - Library._lastTabHoverSoundTime >= 0.22 then
-        Library._lastTabHoverSoundTime = _now
-        Library:PlayHoverSound();
-    end
 			TweenService:Create(TabButtonLabel, tabTween, {
 				TextColor3 = Library.AccentColor;
 			}):Play();
@@ -5195,8 +5207,6 @@ TabButton.MouseEnter:Connect(function()
 				Tab:HideTab();
 			end;
 
-			Library:PlayClickSound();
-
 			TweenService:Create(Blocker, tabActiveTween, {
 				BackgroundTransparency = 0;
 			}):Play();
@@ -5262,7 +5272,7 @@ local BoxInner = Library:Create('Frame', {
     BorderSizePixel  = 0;
     Size             = UDim2.new(1, -2, 1, -2);
     Position         = UDim2.new(0, 1, 0, 1);
-    ClipsDescendants = true;
+    ClipsDescendants = false;
     ZIndex           = 4;
     Parent           = BoxOuter;
 });
@@ -5545,6 +5555,7 @@ Tab.Groupboxes[Info.Name] = Groupbox;
 
 		TabButton.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+				Library:PlayClickSound();
 				Tab:ShowTab();
 			end;
 		end);
