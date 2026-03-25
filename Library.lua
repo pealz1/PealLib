@@ -33,26 +33,6 @@ ProtectGui(ScreenGui);
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 ScreenGui.Parent = CoreGui;
 
--- Viewport-adaptive scale: fits desktop and mobile screens
-local function _calcViewportScale()
-	local cam = workspace.CurrentCamera
-	if not cam then return 1 end
-	local vp = cam.ViewportSize
-	local isMobile = InputService.TouchEnabled and not InputService.MouseEnabled
-	if isMobile then
-		local w = math.min(vp.X, vp.Y)
-		return math.clamp(w / 540, 0.62, 1.0)
-	end
-	return math.clamp(vp.X / 1366, 0.82, 1.18)
-end
-local _LibUIScale = Instance.new('UIScale')
-_LibUIScale.Scale = _calcViewportScale()
-_LibUIScale.Parent = ScreenGui
-pcall(function()
-	workspace.CurrentCamera:GetPropertyChangedSignal('ViewportSize'):Connect(function()
-		_LibUIScale.Scale = _calcViewportScale()
-	end)
-end)
 
 local Toggles = {};
 local Options = {};
@@ -2185,31 +2165,16 @@ end
 
 		Groupbox:AddBlank(4);
 
-		-- Thin gradient accent line — fades in from edges, solid in center
 		local DividerLine = Library:Create('Frame', {
-			BackgroundColor3 = Color3.new(1, 1, 1);
+			BackgroundColor3 = Library.AccentColor;
+			BackgroundTransparency = 0.55;
 			BorderSizePixel = 0;
 			Size = UDim2.new(1, -6, 0, 1);
 			ZIndex = 6;
 			Parent = Container;
 		});
 
-		Library:Create('UIGradient', {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0,    Color3.new(0, 0, 0));
-				ColorSequenceKeypoint.new(0.1,  Library.AccentColor);
-				ColorSequenceKeypoint.new(0.9,  Library.AccentColor);
-				ColorSequenceKeypoint.new(1,    Color3.new(0, 0, 0));
-			});
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0,    1);
-				NumberSequenceKeypoint.new(0.1,  0.42);
-				NumberSequenceKeypoint.new(0.9,  0.42);
-				NumberSequenceKeypoint.new(1,    1);
-			});
-			Rotation = 0;
-			Parent = DividerLine;
-		});
+		Library:AddToRegistry(DividerLine, { BackgroundColor3 = 'AccentColor' });
 
 		Groupbox:AddBlank(4);
 		Groupbox:Resize();
@@ -3343,8 +3308,8 @@ end;
 do
 	Library.NotificationArea = Library:Create('Frame', {
 		BackgroundTransparency = 1;
-		AnchorPoint = Vector2.new(0, 0);
-		Position = UDim2.new(0, 0, 0, 55);
+		AnchorPoint = Vector2.new(1, 0);
+		Position = UDim2.new(1, 0, 0, 55);
 		Size = UDim2.new(0, 380, 1, -65);
 		ZIndex = 100;
 		Parent = ScreenGui;
@@ -3354,6 +3319,7 @@ do
 		Padding = UDim.new(0, 5);
 		FillDirection = Enum.FillDirection.Vertical;
 		SortOrder = Enum.SortOrder.LayoutOrder;
+		HorizontalAlignment = Enum.HorizontalAlignment.Right;
 		Parent = Library.NotificationArea;
 	});
 
@@ -3944,7 +3910,6 @@ function Groupbox:Resize()
     local layout = Container:FindFirstChildWhichIsA('UIListLayout')
     local h = layout and layout.AbsoluteContentSize.Y or 0
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
-    BoxInner.Size = UDim2.new(1, -2, 0, 20 + h + 4)
 end;
 
 local _popLayout = Container:FindFirstChildWhichIsA('UIListLayout')
@@ -4521,7 +4486,6 @@ function Library:CreateHomeTab(Window, Info)
 			BorderSizePixel  = 0;
 			Size             = UDim2.new(1, -2, 1, -2);
 			Position         = UDim2.new(0, 1, 0, 1);
-			ClipsDescendants = true;
 			ZIndex           = 4;
 			Parent           = BoxOuter;
 		});
@@ -4566,7 +4530,6 @@ function Groupbox:Resize()
     local layout = Container:FindFirstChildWhichIsA('UIListLayout')
     local h = layout and layout.AbsoluteContentSize.Y or 0
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
-    BoxInner.Size = UDim2.new(1, -2, 0, 20 + h + 4)
 end;
 
 local _homeLayout = Container:FindFirstChildWhichIsA('UIListLayout')
@@ -4786,23 +4749,24 @@ function Library:Notify(Text, Time)
 		Parent = NotifyOuter;
 	});
 
-	Library:Create('UIGradient', {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Library:GetDarkerColor(Library.MainColor)),
-			ColorSequenceKeypoint.new(1, Library.MainColor),
-		});
-		Rotation = 90;
+	Library:AddToRegistry(NotifyCard, { BackgroundColor3 = 'MainColor' }, true);
+
+	-- Left accent bar
+	local AccentBar = Library:Create('Frame', {
+		BackgroundColor3 = Library.AccentColor;
+		BorderSizePixel = 0;
+		Position = UDim2.new(0, 0, 0, 0);
+		Size = UDim2.new(0, 3, 0, cardH);
+		ZIndex = 103;
 		Parent = NotifyCard;
 	});
 
-	Library:AddToRegistry(NotifyCard, {
-		BackgroundColor3 = 'MainColor';
-	}, true);
+	Library:AddToRegistry(AccentBar, { BackgroundColor3 = 'AccentColor' }, true);
 
-	-- Text label (leaves room for right accent bar)
+	-- Text label
 	local NotifyLabel = Library:CreateLabel({
 		Position = UDim2.new(0, 10, 0, 0);
-		Size = UDim2.new(1, -20, 1, 0);
+		Size = UDim2.new(1, -14, 1, 0);
 		Text = Text;
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextWrapped = true;
@@ -4811,37 +4775,12 @@ function Library:Notify(Text, Time)
 		Parent = NotifyCard;
 	});
 
-	-- Right accent bar — flush at right inside edge, visible through clip
-	local RightBar = Library:Create('Frame', {
-		BackgroundColor3 = Library.AccentColor;
-		BorderSizePixel = 0;
-		Position = UDim2.new(1, -3, 0, 0);
-		Size = UDim2.new(0, 3, 0, cardH);
-		ZIndex = 104;
-		Parent = NotifyOuter;
-	});
-
-	Library:AddToRegistry(RightBar, { BackgroundColor3 = 'AccentColor' }, true);
-
-	-- Glow strip just inside the right bar (blends into card)
-	local BarGlow = Library:Create('Frame', {
-		BackgroundColor3 = Library.AccentColor;
-		BackgroundTransparency = 0.65;
-		BorderSizePixel = 0;
-		Position = UDim2.new(1, -10, 0, 0);
-		Size = UDim2.new(0, 7, 0, cardH);
-		ZIndex = 103;
-		Parent = NotifyOuter;
-	});
-
-	Library:AddToRegistry(BarGlow, { BackgroundColor3 = 'AccentColor' }, true);
-
-	-- Progress bar track — at bottom of card, leaves gap for accent bar
+	-- Progress bar track — at bottom of outer, full width
 	local ProgressTrack = Library:Create('Frame', {
 		BackgroundColor3 = Library.OutlineColor;
 		BorderSizePixel = 0;
 		Position = UDim2.new(0, 0, 0, cardH);
-		Size = UDim2.new(1, -3, 0, 3);
+		Size = UDim2.new(1, 0, 0, 3);
 		ZIndex = 105;
 		Parent = NotifyOuter;
 	});
@@ -4860,20 +4799,15 @@ function Library:Notify(Text, Time)
 
 	local duration = Time or 5;
 
-	-- Entry: expand width from left to right
+	-- Entry: expand width
 	NotifyOuter.Size = UDim2.new(0, 0, 0, totalH);
 	TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
 		Size = UDim2.new(0, maxW, 0, totalH);
 	}):Play();
 
-	-- Progress bar shrinks over the display duration (start after entry anim)
+	-- Progress bar shrinks over display duration
 	task.spawn(function()
 		task.wait(0.38);
-		-- Fade out the inner glow strip
-		TweenService:Create(BarGlow, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {
-			BackgroundTransparency = 1;
-		}):Play();
-		-- Shrink progress bar
 		TweenService:Create(ProgressFill, TweenInfo.new(math.max(duration - 0.38, 0.1), Enum.EasingStyle.Linear), {
 			Size = UDim2.new(0, 0, 1, 0);
 		}):Play();
@@ -4907,8 +4841,7 @@ function Library:CreateWindow(...)
 	if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
 	if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 600) end
 
-	local _isMobileUI = InputService.TouchEnabled and not InputService.MouseEnabled
-	if Config.Center or _isMobileUI then
+	if Config.Center then
 		Config.AnchorPoint = Vector2.new(0.5, 0.5)
 		Config.Position = UDim2.fromScale(0.5, 0.5)
 	end
@@ -5269,21 +5202,19 @@ TabButton.MouseEnter:Connect(function()
 		});
 
 		local LeftSide = Library:Create('Frame', {
-			AutomaticSize = Enum.AutomaticSize.Y;
 			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
 			Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
-			Size = UDim2.new(0.5, -12 + 2, 0, 0);
+			Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
 
 		local RightSide = Library:Create('Frame', {
-			AutomaticSize = Enum.AutomaticSize.Y;
 			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
 			Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
-			Size = UDim2.new(0.5, -12 + 2, 0, 0);
+			Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
@@ -5304,7 +5235,15 @@ TabButton.MouseEnter:Connect(function()
 			Parent = RightSide;
 		});
 
-		-- AbsoluteContentSize auto-resize handled by AutomaticSize.Y on LeftSide/RightSide
+		-- Auto-resize columns so groupboxes never overflow into adjacent ones
+		do
+			local function _resizeCol(col)
+				local ll = col:FindFirstChildWhichIsA('UIListLayout')
+				if ll then col.Size = UDim2.new(0.5, -12 + 2, 0, ll.AbsoluteContentSize.Y + 16) end
+			end
+			LeftSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(LeftSide) end)
+			RightSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(RightSide) end)
+		end
 
 		local tabActiveTween = Library._TI_TabActive;
 
@@ -5378,7 +5317,6 @@ local BoxInner = Library:Create('Frame', {
     BorderSizePixel  = 0;
     Size             = UDim2.new(1, -2, 1, -2);
     Position         = UDim2.new(0, 1, 0, 1);
-    ClipsDescendants = true;
     ZIndex           = 4;
     Parent           = BoxOuter;
 });
@@ -5432,8 +5370,6 @@ function Groupbox:Resize()
     local layout = Container:FindFirstChildWhichIsA('UIListLayout')
     local h = layout and layout.AbsoluteContentSize.Y or 0
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
-    -- Keep BoxInner tracking BoxOuter so ClipsDescendants doesn't cut content
-    BoxInner.Size = UDim2.new(1, -2, 0, 20 + h + 4)
 end;
 
 -- Auto-resize whenever layout content changes (fixes timing/race conditions)
