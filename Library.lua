@@ -2163,20 +2163,54 @@ end
 			Type = 'Divider',
 		}
 
-		Groupbox:AddBlank(4);
+		Groupbox:AddBlank(7);
 
-		local DividerLine = Library:Create('Frame', {
-			BackgroundColor3 = Library.AccentColor;
-			BackgroundTransparency = 0.55;
+		local DividerFrame = Library:Create('Frame', {
+			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
-			Size = UDim2.new(1, -6, 0, 1);
+			Size = UDim2.new(1, -6, 0, 6);
 			ZIndex = 6;
 			Parent = Container;
 		});
 
-		Library:AddToRegistry(DividerLine, { BackgroundColor3 = 'AccentColor' });
+		local DividerLine = Library:Create('Frame', {
+			BackgroundColor3 = Library.AccentColor;
+			BackgroundTransparency = 0.3;
+			BorderSizePixel = 0;
+			AnchorPoint = Vector2.new(0, 0.5);
+			Position = UDim2.new(0, 0, 0.5, 0);
+			Size = UDim2.new(1, 0, 0, 1);
+			ZIndex = 6;
+			Parent = DividerFrame;
+		});
 
-		Groupbox:AddBlank(4);
+		Library:Create('UIGradient', {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.12, 0.3),
+				NumberSequenceKeypoint.new(0.5, 0),
+				NumberSequenceKeypoint.new(0.88, 0.3),
+				NumberSequenceKeypoint.new(1, 1),
+			});
+			Parent = DividerLine;
+		});
+
+		local DividerDot = Library:Create('Frame', {
+			AnchorPoint = Vector2.new(0.5, 0.5);
+			BackgroundColor3 = Library.AccentColor;
+			BackgroundTransparency = 0.2;
+			BorderSizePixel = 0;
+			Position = UDim2.new(0.5, 0, 0.5, 0);
+			Size = UDim2.fromOffset(4, 4);
+			Rotation = 45;
+			ZIndex = 7;
+			Parent = DividerFrame;
+		});
+
+		Library:AddToRegistry(DividerLine, { BackgroundColor3 = 'AccentColor' });
+		Library:AddToRegistry(DividerDot, { BackgroundColor3 = 'AccentColor' });
+
+		Groupbox:AddBlank(7);
 		Groupbox:Resize();
 	end
 
@@ -2586,7 +2620,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		local Fill = Library:Create('Frame', {
 			BackgroundColor3 = Library.AccentColor;
-			BorderColor3 = Library.AccentColorDark;
+			BorderSizePixel = 0;
 			Size = UDim2.new(0, 0, 1, 0);
 			ZIndex = 7;
 			Parent = SliderInner;
@@ -2594,7 +2628,6 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		Library:AddToRegistry(Fill, {
 			BackgroundColor3 = 'AccentColor';
-			BorderColor3 = 'AccentColorDark';
 		});
 
 		local HideBorderRight = Library:Create('Frame', {
@@ -2610,39 +2643,21 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 			BackgroundColor3 = 'AccentColor';
 		});
 
-		-- White glow overlay — becomes more opaque as value increases
-		local FillGlow = Library:Create('Frame', {
-			BackgroundColor3 = Color3.new(1, 1, 1);
-			BackgroundTransparency = 1;
-			BorderSizePixel = 0;
-			Size = UDim2.new(1, 0, 1, 0);
-			ZIndex = 8;
+		local FillStroke = Library:Create('UIStroke', {
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+			Color = Library.AccentColor;
+			Thickness = 1.5;
+			Transparency = 1;
 			Parent = Fill;
 		});
-
-		-- Value badge: right-anchored pill inside SliderInner, above the fill
-		local ValueBadge = Library:Create('Frame', {
-			AnchorPoint = Vector2.new(1, 0.5);
-			BackgroundColor3 = Library.BackgroundColor;
-			BorderColor3 = Library.OutlineColor;
-			BorderMode = Enum.BorderMode.Inset;
-			Position = UDim2.new(1, -1, 0.5, 0);
-			Size = UDim2.fromOffset(52, 13);
-			ZIndex = 10;
-			Parent = SliderInner;
-		});
-
-		Library:AddToRegistry(ValueBadge, {
-			BackgroundColor3 = 'BackgroundColor';
-			BorderColor3 = 'OutlineColor';
-		});
+		Library:AddToRegistry(FillStroke, { Color = 'AccentColor' });
 
 		local DisplayLabel = Library:CreateLabel({
-			Size = UDim2.new(1, -2, 1, 0);
-			TextSize = 12;
+			Size = UDim2.new(1, 0, 1, 0);
+			TextSize = 13;
 			Text = '';
-			ZIndex = 11;
-			Parent = ValueBadge;
+			ZIndex = 10;
+			Parent = SliderInner;
 		});
 
 		Library:OnHighlight(SliderOuter, SliderOuter,
@@ -2656,7 +2671,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		function Slider:UpdateColors()
 			Fill.BackgroundColor3 = Library.AccentColor;
-			Fill.BorderColor3 = Library.AccentColorDark;
+			FillStroke.Color = Library.AccentColor;
 		end;
 
 		function Slider:Display()
@@ -2675,9 +2690,8 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 			HideBorderRight.Visible = not (X == Slider.MaxSize or X == 0);
 
-			-- Glow intensity increases with value ratio
 			local _ratio = math.clamp((Slider.Value - Slider.Min) / math.max(Slider.Max - Slider.Min, 1), 0, 1);
-			FillGlow.BackgroundTransparency = 1 - (_ratio * 0.24);
+			FillStroke.Transparency = 1 - _ratio;
 		end;
 
 		function Slider:OnChanged(Func)
@@ -4725,12 +4739,11 @@ end;
 function Library:Notify(Text, Time)
 	Library:PlaySound('rbxassetid://6042053827', 0.22);
 
-	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 15);
-	local maxW  = math.max(XSize + 38, 210);
-	local cardH = math.max(YSize + 20, 34);
-	local totalH = cardH + 3;  -- 3px for progress bar below
+	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
+	local maxW  = math.max(XSize + 28, 210);
+	local cardH = math.max(YSize + 30, 40);
+	local totalH = cardH + 2;
 
-	-- Clip container (controls the width reveal animation)
 	local NotifyOuter = Library:Create('Frame', {
 		BackgroundTransparency = 1;
 		BorderSizePixel = 0;
@@ -4740,7 +4753,6 @@ function Library:Notify(Text, Time)
 		Parent = Library.NotificationArea;
 	});
 
-	-- Main card background
 	local NotifyCard = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
 		BorderSizePixel = 0;
@@ -4748,44 +4760,48 @@ function Library:Notify(Text, Time)
 		ZIndex = 101;
 		Parent = NotifyOuter;
 	});
-
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = NotifyCard; });
 	Library:AddToRegistry(NotifyCard, { BackgroundColor3 = 'MainColor' }, true);
 
-	-- Left accent bar
-	local AccentBar = Library:Create('Frame', {
+	local _notifyStroke = Library:Create('UIStroke', {
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+		Color = Library.AccentColor;
+		Thickness = 1;
+		Transparency = 0.55;
+		Parent = NotifyCard;
+	});
+	Library:AddToRegistry(_notifyStroke, { Color = 'AccentColor' }, true);
+
+	local TopAccent = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
 		BorderSizePixel = 0;
-		Position = UDim2.new(0, 0, 0, 0);
-		Size = UDim2.new(0, 3, 0, cardH);
+		Size = UDim2.new(1, 0, 0, 2);
 		ZIndex = 103;
 		Parent = NotifyCard;
 	});
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = TopAccent; });
+	Library:AddToRegistry(TopAccent, { BackgroundColor3 = 'AccentColor' }, true);
 
-	Library:AddToRegistry(AccentBar, { BackgroundColor3 = 'AccentColor' }, true);
-
-	-- Text label
 	local NotifyLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 10, 0, 0);
-		Size = UDim2.new(1, -14, 1, 0);
+		Position = UDim2.new(0, 10, 0, 6);
+		Size = UDim2.new(1, -20, 1, -6);
 		Text = Text;
 		TextXAlignment = Enum.TextXAlignment.Left;
 		TextWrapped = true;
-		TextSize = 15;
+		TextSize = 14;
 		ZIndex = 103;
 		Parent = NotifyCard;
 	});
 
-	-- Progress bar track — at bottom of outer, full width
 	local ProgressTrack = Library:Create('Frame', {
-		BackgroundColor3 = Library.OutlineColor;
+		BackgroundColor3 = Library.BackgroundColor;
 		BorderSizePixel = 0;
 		Position = UDim2.new(0, 0, 0, cardH);
-		Size = UDim2.new(1, 0, 0, 3);
+		Size = UDim2.new(1, 0, 0, 2);
 		ZIndex = 105;
 		Parent = NotifyOuter;
 	});
-
-	Library:AddToRegistry(ProgressTrack, { BackgroundColor3 = 'OutlineColor' }, true);
+	Library:AddToRegistry(ProgressTrack, { BackgroundColor3 = 'BackgroundColor' }, true);
 
 	local ProgressFill = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
@@ -4794,18 +4810,15 @@ function Library:Notify(Text, Time)
 		ZIndex = 106;
 		Parent = ProgressTrack;
 	});
-
 	Library:AddToRegistry(ProgressFill, { BackgroundColor3 = 'AccentColor' }, true);
 
 	local duration = Time or 5;
 
-	-- Entry: expand width
 	NotifyOuter.Size = UDim2.new(0, 0, 0, totalH);
 	TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
 		Size = UDim2.new(0, maxW, 0, totalH);
 	}):Play();
 
-	-- Progress bar shrinks over display duration
 	task.spawn(function()
 		task.wait(0.38);
 		TweenService:Create(ProgressFill, TweenInfo.new(math.max(duration - 0.38, 0.1), Enum.EasingStyle.Linear), {
