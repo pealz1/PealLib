@@ -75,8 +75,8 @@ Library._TI_Bounce        = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.Easi
 Library._TI_TabActive     = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 Library._TI_ToggleFill    = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 Library._TI_DropdownArrow = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-Library._TI_NotifyIn      = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
-Library._TI_NotifyOut     = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In);
+Library._TI_NotifyIn      = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_NotifyOut     = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In);
 
 -- ══ Shared sound pool (one instance per sound ID, reused everywhere) ══
 Library._SoundPool = {};
@@ -101,6 +101,16 @@ end;
 function Library:PlayHoverSound()
 	Library:PlaySound('rbxassetid://6026984224', 0.1);
 end;
+
+-- ── Device detection ─────────────────────────────────────────────────
+local function _IsMobile()
+	local lastInput = InputService:GetLastInputType()
+	if lastInput == Enum.UserInputType.Touch then return true end
+	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+	return (vp and vp.X < 600) or false
+end
+
+Library._NotifyOrder = 0
 
 local RainbowStep = 0
 local Hue = 0
@@ -2156,62 +2166,54 @@ end
 	end
 
 	function Funcs:AddDivider()
-		local Groupbox = self;
+		local Groupbox  = self
 		local Container = self.Container
 
-		local Divider = {
-			Type = 'Divider',
-		}
-
-		Groupbox:AddBlank(7);
+		Groupbox:AddBlank(4)
 
 		local DividerFrame = Library:Create('Frame', {
 			BackgroundTransparency = 1;
-			BorderSizePixel = 0;
-			Size = UDim2.new(1, -6, 0, 6);
-			ZIndex = 6;
-			Parent = Container;
-		});
+			BorderSizePixel        = 0;
+			Size                   = UDim2.new(1, -4, 0, 10);
+			ZIndex                 = 6;
+			Parent                 = Container;
+		})
 
-		local DividerLine = Library:Create('Frame', {
-			BackgroundColor3 = Library.AccentColor;
-			BackgroundTransparency = 0.3;
-			BorderSizePixel = 0;
-			AnchorPoint = Vector2.new(0, 0.5);
-			Position = UDim2.new(0, 0, 0.5, 0);
-			Size = UDim2.new(1, 0, 0, 1);
-			ZIndex = 6;
-			Parent = DividerFrame;
-		});
+		local DividerOuter = Library:Create('Frame', {
+			BackgroundColor3 = Library.OutlineColor;
+			BorderSizePixel  = 0;
+			Size             = UDim2.new(1, 0, 1, 0);
+			ZIndex           = 6;
+			Parent           = DividerFrame;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = DividerOuter })
 
-		Library:Create('UIGradient', {
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.12, 0.3),
-				NumberSequenceKeypoint.new(0.5, 0),
-				NumberSequenceKeypoint.new(0.88, 0.3),
-				NumberSequenceKeypoint.new(1, 1),
-			});
-			Parent = DividerLine;
-		});
+		local DividerInner = Library:Create('Frame', {
+			BackgroundColor3 = Library.BackgroundColor;
+			BorderSizePixel  = 0;
+			Position         = UDim2.new(0, 1, 0, 1);
+			Size             = UDim2.new(1, -2, 1, -2);
+			ZIndex           = 6;
+			Parent           = DividerOuter;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = DividerInner })
 
-		local DividerDot = Library:Create('Frame', {
-			AnchorPoint = Vector2.new(0.5, 0.5);
-			BackgroundColor3 = Library.AccentColor;
-			BackgroundTransparency = 0.2;
-			BorderSizePixel = 0;
-			Position = UDim2.new(0.5, 0, 0.5, 0);
-			Size = UDim2.fromOffset(4, 4);
-			Rotation = 45;
-			ZIndex = 7;
-			Parent = DividerFrame;
-		});
+		local DividerTopEdge = Library:Create('Frame', {
+			BackgroundColor3       = Library.AccentColor;
+			BackgroundTransparency = 0.5;
+			BorderSizePixel        = 0;
+			Size                   = UDim2.new(1, 0, 0, 1);
+			ZIndex                 = 7;
+			Parent                 = DividerInner;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = DividerTopEdge })
 
-		Library:AddToRegistry(DividerLine, { BackgroundColor3 = 'AccentColor' });
-		Library:AddToRegistry(DividerDot, { BackgroundColor3 = 'AccentColor' });
+		Library:AddToRegistry(DividerOuter,   { BackgroundColor3 = 'OutlineColor'    })
+		Library:AddToRegistry(DividerInner,   { BackgroundColor3 = 'BackgroundColor' })
+		Library:AddToRegistry(DividerTopEdge, { BackgroundColor3 = 'AccentColor'     })
 
-		Groupbox:AddBlank(7);
-		Groupbox:Resize();
+		Groupbox:AddBlank(4)
+		Groupbox:Resize()
 	end
 
 	function Funcs:AddInput(Idx, Info)
@@ -3322,20 +3324,44 @@ end;
 do
 	Library.NotificationArea = Library:Create('Frame', {
 		BackgroundTransparency = 1;
-		AnchorPoint = Vector2.new(1, 0);
-		Position = UDim2.new(1, 0, 0, 55);
-		Size = UDim2.new(0, 380, 1, -65);
-		ZIndex = 100;
-		Parent = ScreenGui;
-	});
+		BorderSizePixel        = 0;
+		ClipsDescendants       = false;
+		ZIndex                 = 100;
+		Parent                 = ScreenGui;
+	})
 
-	Library:Create('UIListLayout', {
-		Padding = UDim.new(0, 5);
-		FillDirection = Enum.FillDirection.Vertical;
-		SortOrder = Enum.SortOrder.LayoutOrder;
-		HorizontalAlignment = Enum.HorizontalAlignment.Right;
-		Parent = Library.NotificationArea;
-	});
+	local _notifyLayout = Library:Create('UIListLayout', {
+		Padding           = UDim.new(0, 5);
+		FillDirection     = Enum.FillDirection.Vertical;
+		SortOrder         = Enum.SortOrder.LayoutOrder;
+		Parent            = Library.NotificationArea;
+	})
+
+	local function _UpdateNotificationAreaLayout()
+		local mobile = _IsMobile()
+		local vp     = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
+		               or Vector2.new(800, 600)
+		local notifW = math.min(360, vp.X - 20)
+		if mobile then
+			Library.NotificationArea.AnchorPoint = Vector2.new(0.5, 1)
+			Library.NotificationArea.Position    = UDim2.new(0.5, 0, 1, -10)
+			Library.NotificationArea.Size        = UDim2.new(0, notifW, 0, 400)
+			_notifyLayout.VerticalAlignment      = Enum.VerticalAlignment.Bottom
+			_notifyLayout.HorizontalAlignment    = Enum.HorizontalAlignment.Center
+		else
+			Library.NotificationArea.AnchorPoint = Vector2.new(1, 0)
+			Library.NotificationArea.Position    = UDim2.new(1, -10, 0, 55)
+			Library.NotificationArea.Size        = UDim2.new(0, notifW, 1, -65)
+			_notifyLayout.VerticalAlignment      = Enum.VerticalAlignment.Top
+			_notifyLayout.HorizontalAlignment    = Enum.HorizontalAlignment.Right
+		end
+	end
+
+	_UpdateNotificationAreaLayout()
+
+	InputService.LastInputTypeChanged:Connect(function(_inputType)
+		_UpdateNotificationAreaLayout()
+	end)
 
 -- ── Watermark ───────────────────────────────────────────────────────────
 local WatermarkOuter = Library:Create('Frame', {
@@ -4736,104 +4762,289 @@ end
 	return HomeTab;
 end;
 
-function Library:Notify(Text, Time)
-	Library:PlaySound('rbxassetid://6042053827', 0.22);
+function Library:Notify(InfoOrText, Time)
+	-- Supports old API: Library:Notify("text", 3)
+	-- Supports new API: Library:Notify({ Text = "text", Time = 3, Buttons = { {Text="OK", Func=fn} } })
+	local Info
+	if type(InfoOrText) == 'table' then
+		Info = InfoOrText
+	else
+		Info = { Text = tostring(InfoOrText or ''), Time = Time }
+	end
 
-	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
-	local maxW  = math.max(XSize + 28, 210);
-	local cardH = math.max(YSize + 30, 40);
-	local totalH = cardH + 2;
+	local Text       = tostring(Info.Text or '')
+	local duration   = type(Info.Time) == 'number' and Info.Time or 5
+	local Buttons    = (type(Info.Buttons) == 'table' and #Info.Buttons > 0) and Info.Buttons or nil
+	local hasButtons = Buttons ~= nil
 
+	Library:PlaySound('rbxassetid://6042053827', 0.22)
+
+	local mobile = _IsMobile()
+	local vp     = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
+	               or Vector2.new(800, 600)
+	local cardW  = math.min(360, vp.X - 20)
+	local textW  = cardW - 22
+	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(textW, math.huge))
+	local textH  = math.max(YSize, 14)
+
+	-- cardH = 2(topbar) + 10(toppad) + textH + 8(botpad) [+ 29 if buttons]
+	local btnAreaH = hasButtons and 29 or 0
+	local cardH    = math.max(2 + 10 + textH + 8 + btnAreaH, 34)
+	local totalH   = cardH + 2
+
+	Library._NotifyOrder = Library._NotifyOrder + 1
+
+	-- Outer: clips the card during slide animation
 	local NotifyOuter = Library:Create('Frame', {
 		BackgroundTransparency = 1;
-		BorderSizePixel = 0;
-		Size = UDim2.new(0, 0, 0, totalH);
-		ClipsDescendants = true;
-		ZIndex = 100;
-		Parent = Library.NotificationArea;
-	});
+		BorderSizePixel        = 0;
+		ClipsDescendants       = true;
+		ZIndex                 = 100;
+		LayoutOrder            = Library._NotifyOrder;
+		Parent                 = Library.NotificationArea;
+	})
 
-	local NotifyCard = Library:Create('Frame', {
+	-- Shell: OutlineColor bg acts as 1px border
+	local NotifyShell = Library:Create('Frame', {
+		BackgroundColor3 = Library.OutlineColor;
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, cardH);
+		ZIndex           = 101;
+		Parent           = NotifyOuter;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = NotifyShell })
+	Library:AddToRegistry(NotifyShell, { BackgroundColor3 = 'OutlineColor' }, true)
+
+	-- Drop shadow (behind shell via lower ZIndex, child so it moves with shell)
+	local ShadowFrame = Library:Create('Frame', {
+		BackgroundColor3       = Color3.new(0, 0, 0);
+		BackgroundTransparency = 0.5;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0, -1, 0, 2);
+		Size                   = UDim2.new(1, 2, 1, 2);
+		ZIndex                 = 100;
+		Parent                 = NotifyShell;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 7); Parent = ShadowFrame })
+
+	-- Inner panel: MainColor, 1px inset
+	local NotifyInner = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
-		BorderSizePixel = 0;
-		Size = UDim2.new(1, 0, 0, cardH);
-		ZIndex = 101;
-		Parent = NotifyOuter;
-	});
-	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = NotifyCard; });
-	Library:AddToRegistry(NotifyCard, { BackgroundColor3 = 'MainColor' }, true);
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 1, 0, 1);
+		Size             = UDim2.new(1, -2, 1, -2);
+		ZIndex           = 102;
+		Parent           = NotifyShell;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = NotifyInner })
+	Library:AddToRegistry(NotifyInner, { BackgroundColor3 = 'MainColor' }, true)
 
+	-- Accent stroke
 	local _notifyStroke = Library:Create('UIStroke', {
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
-		Color = Library.AccentColor;
-		Thickness = 1;
-		Transparency = 0.55;
-		Parent = NotifyCard;
-	});
-	Library:AddToRegistry(_notifyStroke, { Color = 'AccentColor' }, true);
+		Color           = Library.AccentColor;
+		Thickness       = 1;
+		Transparency    = 0.6;
+		Parent          = NotifyInner;
+	})
+	Library:AddToRegistry(_notifyStroke, { Color = 'AccentColor' }, true)
 
+	-- Top accent bar (2px)
 	local TopAccent = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
-		BorderSizePixel = 0;
-		Size = UDim2.new(1, 0, 0, 2);
-		ZIndex = 103;
-		Parent = NotifyCard;
-	});
-	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = TopAccent; });
-	Library:AddToRegistry(TopAccent, { BackgroundColor3 = 'AccentColor' }, true);
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, 2);
+		ZIndex           = 104;
+		Parent           = NotifyInner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = TopAccent })
+	Library:AddToRegistry(TopAccent, { BackgroundColor3 = 'AccentColor' }, true)
 
+	-- Bottom accent bar (1px, subtle)
+	local BottomAccent = Library:Create('Frame', {
+		BackgroundColor3       = Library.AccentColor;
+		BackgroundTransparency = 0.75;
+		BorderSizePixel        = 0;
+		AnchorPoint            = Vector2.new(0, 1);
+		Position               = UDim2.new(0, 0, 1, 0);
+		Size                   = UDim2.new(1, 0, 0, 1);
+		ZIndex                 = 104;
+		Parent                 = NotifyInner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = BottomAccent })
+	Library:AddToRegistry(BottomAccent, { BackgroundColor3 = 'AccentColor' }, true)
+
+	-- Text label (starts at y=12: 2px topbar + 10px padding)
 	local NotifyLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 10, 0, 6);
-		Size = UDim2.new(1, -20, 1, -6);
-		Text = Text;
+		Position       = UDim2.new(0, 10, 0, 12);
+		Size           = UDim2.new(1, -20, 0, textH);
+		Text           = Text;
 		TextXAlignment = Enum.TextXAlignment.Left;
-		TextWrapped = true;
-		TextSize = 14;
-		ZIndex = 103;
-		Parent = NotifyCard;
-	});
+		TextWrapped    = true;
+		TextSize       = 14;
+		ZIndex         = 104;
+		Parent         = NotifyInner;
+	})
 
+	-- Dismiss helper (shared by timer and button clicks; dismissed flag prevents double-fire)
+	local dismissed = false
+	local function _dismiss()
+		if dismissed then return end
+		dismissed = true
+		if mobile then
+			TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
+				Size = UDim2.new(0, cardW, 0, 0)
+			}):Play()
+		else
+			TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
+				Size = UDim2.new(0, 0, 0, totalH)
+			}):Play()
+		end
+		task.delay(0.26, function()
+			pcall(function() NotifyOuter:Destroy() end)
+		end)
+	end
+
+	-- Optional button row
+	if hasButtons then
+		local dividerY = 2 + 10 + textH + 8
+
+		local ButtonDivider = Library:Create('Frame', {
+			BackgroundColor3 = Library.OutlineColor;
+			BorderSizePixel  = 0;
+			Position         = UDim2.new(0, 4, 0, dividerY);
+			Size             = UDim2.new(1, -8, 0, 1);
+			ZIndex           = 104;
+			Parent           = NotifyInner;
+		})
+		Library:AddToRegistry(ButtonDivider, { BackgroundColor3 = 'OutlineColor' }, true)
+
+		local ButtonRow = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			BorderSizePixel        = 0;
+			Position               = UDim2.new(0, 4, 0, dividerY + 5);
+			Size                   = UDim2.new(1, -8, 0, 20);
+			ZIndex                 = 104;
+			Parent                 = NotifyInner;
+		})
+		Library:Create('UIListLayout', {
+			Padding           = UDim.new(0, 4);
+			FillDirection     = Enum.FillDirection.Horizontal;
+			SortOrder         = Enum.SortOrder.LayoutOrder;
+			VerticalAlignment = Enum.VerticalAlignment.Center;
+			Parent            = ButtonRow;
+		})
+
+		local innerW    = cardW - 2 - 8
+		local btnCount  = #Buttons
+		local totalGaps = (btnCount - 1) * 4
+		local btnW      = math.floor((innerW - totalGaps) / btnCount)
+
+		local normalColor = Library.MainColor
+		local hoverColor  = Color3.fromRGB(38, 38, 38)
+
+		for i, BtnInfo in ipairs(Buttons) do
+			local BtnOuter = Library:Create('Frame', {
+				BackgroundColor3 = Library.OutlineColor;
+				BorderSizePixel  = 0;
+				Size             = UDim2.fromOffset(btnW, 20);
+				LayoutOrder      = i;
+				ZIndex           = 104;
+				Parent           = ButtonRow;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = BtnOuter })
+			Library:AddToRegistry(BtnOuter, { BackgroundColor3 = 'OutlineColor' }, true)
+
+			local BtnInner = Library:Create('Frame', {
+				BackgroundColor3 = Library.MainColor;
+				BorderSizePixel  = 0;
+				Position         = UDim2.new(0, 1, 0, 1);
+				Size             = UDim2.new(1, -2, 1, -2);
+				ZIndex           = 105;
+				Parent           = BtnOuter;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = BtnInner })
+			Library:AddToRegistry(BtnInner, { BackgroundColor3 = 'MainColor' }, true)
+
+			local BtnTopBar = Library:Create('Frame', {
+				BackgroundColor3 = Library.AccentColor;
+				BorderSizePixel  = 0;
+				Size             = UDim2.new(1, 0, 0, 2);
+				ZIndex           = 106;
+				Parent           = BtnInner;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = BtnTopBar })
+			Library:AddToRegistry(BtnTopBar, { BackgroundColor3 = 'AccentColor' }, true)
+
+			Library:CreateLabel({
+				Size           = UDim2.new(1, 0, 1, 0);
+				TextSize       = 12;
+				Text           = tostring(BtnInfo.Text or '');
+				TextXAlignment = Enum.TextXAlignment.Center;
+				ZIndex         = 106;
+				Parent         = BtnInner;
+			})
+
+			BtnOuter.MouseEnter:Connect(function()
+				TweenService:Create(BtnInner, TweenInfo.new(0.1), { BackgroundColor3 = hoverColor }):Play()
+			end)
+			BtnOuter.MouseLeave:Connect(function()
+				TweenService:Create(BtnInner, TweenInfo.new(0.1), { BackgroundColor3 = normalColor }):Play()
+			end)
+			BtnOuter.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+					pcall(BtnInfo.Func)
+					_dismiss()
+				end
+			end)
+		end
+	end
+
+	-- Progress track (sibling to shell, positioned below it)
 	local ProgressTrack = Library:Create('Frame', {
 		BackgroundColor3 = Library.BackgroundColor;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, 0, 0, cardH);
-		Size = UDim2.new(1, 0, 0, 2);
-		ZIndex = 105;
-		Parent = NotifyOuter;
-	});
-	Library:AddToRegistry(ProgressTrack, { BackgroundColor3 = 'BackgroundColor' }, true);
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 0, 0, cardH);
+		Size             = UDim2.new(1, 0, 0, 2);
+		ZIndex           = 105;
+		Parent           = NotifyOuter;
+	})
+	Library:AddToRegistry(ProgressTrack, { BackgroundColor3 = 'BackgroundColor' }, true)
 
 	local ProgressFill = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
-		BorderSizePixel = 0;
-		Size = UDim2.new(1, 0, 1, 0);
-		ZIndex = 106;
-		Parent = ProgressTrack;
-	});
-	Library:AddToRegistry(ProgressFill, { BackgroundColor3 = 'AccentColor' }, true);
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 1, 0);
+		ZIndex           = 106;
+		Parent           = ProgressTrack;
+	})
+	Library:AddToRegistry(ProgressFill, { BackgroundColor3 = 'AccentColor' }, true)
 
-	local duration = Time or 5;
+	-- Slide-in animation
+	if mobile then
+		NotifyOuter.Size = UDim2.new(0, cardW, 0, 0)
+		TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
+			Size = UDim2.new(0, cardW, 0, totalH)
+		}):Play()
+	else
+		NotifyOuter.Size = UDim2.new(0, 0, 0, totalH)
+		TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
+			Size = UDim2.new(0, cardW, 0, totalH)
+		}):Play()
+	end
 
-	NotifyOuter.Size = UDim2.new(0, 0, 0, totalH);
-	TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
-		Size = UDim2.new(0, maxW, 0, totalH);
-	}):Play();
-
+	-- Progress drain + auto-dismiss
 	task.spawn(function()
-		task.wait(0.38);
-		TweenService:Create(ProgressFill, TweenInfo.new(math.max(duration - 0.38, 0.1), Enum.EasingStyle.Linear), {
-			Size = UDim2.new(0, 0, 1, 0);
-		}):Play();
-	end);
-
-	task.spawn(function()
-		task.wait(duration);
-		TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
-			Size = UDim2.new(0, 0, 0, totalH);
-		}):Play();
-		task.wait(0.32);
-		pcall(function() NotifyOuter:Destroy() end);
-	end);
+		task.wait(0.3)
+		TweenService:Create(
+			ProgressFill,
+			TweenInfo.new(math.max(duration - 0.3, 0.1), Enum.EasingStyle.Linear),
+			{ Size = UDim2.new(0, 0, 1, 0) }
+		):Play()
+		task.wait(duration)
+		_dismiss()
+	end)
 end;
 
 function Library:CreateWindow(...)
