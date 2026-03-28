@@ -11,15 +11,15 @@ local Mouse = LocalPlayer:GetMouse();
 
 local Toggled = false;
 local _lastTouchX, _lastTouchY = 0, 0;
-_lastTabHoverSoundTime = 0;
+-- _lastTabHoverSoundTime: throttle for tab hover sounds (accessed via Library._lastTabHoverSoundTime)
 
 -- Track touch position globally so GetMousePosition always has a fresh value
-InputService.InputChanged:Connect(function(input)
+local _touchChangedConn = InputService.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
 		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
 	end;
 end);
-InputService.InputBegan:Connect(function(input)
+local _touchBeganConn = InputService.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
 		_lastTouchX, _lastTouchY = input.Position.X, input.Position.Y;
 	end;
@@ -32,6 +32,238 @@ ProtectGui(ScreenGui);
 
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 ScreenGui.Parent = CoreGui;
+
+-- ══ Loading Screen ═══════════════════════════════════════════════════════════
+do
+	local _LoadGui = Instance.new('ScreenGui');
+	ProtectGui(_LoadGui);
+	_LoadGui.Name = 'RomazHubLoader';
+	_LoadGui.DisplayOrder = 200;
+	_LoadGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+	_LoadGui.ResetOnSpawn = false;
+	_LoadGui.Parent = CoreGui;
+
+	local _Bg = Instance.new('Frame');
+	_Bg.Size = UDim2.new(1, 0, 1, 0);
+	_Bg.BackgroundColor3 = Color3.fromRGB(14, 14, 16);
+	_Bg.BorderSizePixel = 0;
+	_Bg.ZIndex = 1;
+	_Bg.Parent = _LoadGui;
+
+	local _BgGrad = Instance.new('UIGradient');
+	_BgGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 16, 36));
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 14, 16));
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 12));
+	});
+	_BgGrad.Rotation = 135;
+	_BgGrad.Parent = _Bg;
+
+	local _bgAngle = 135;
+	local _bgGradConn = RunService.Heartbeat:Connect(function(dt)
+		_bgAngle = (_bgAngle + dt * 6) % 360;
+		_BgGrad.Rotation = _bgAngle;
+	end);
+
+	local _FadeOverlay = Instance.new('Frame');
+	_FadeOverlay.Size = UDim2.new(1, 0, 1, 0);
+	_FadeOverlay.BackgroundColor3 = Color3.new(0, 0, 0);
+	_FadeOverlay.BackgroundTransparency = 0;
+	_FadeOverlay.BorderSizePixel = 0;
+	_FadeOverlay.ZIndex = 100;
+	_FadeOverlay.Parent = _LoadGui;
+
+	local _Center = Instance.new('Frame');
+	_Center.AnchorPoint = Vector2.new(0.5, 0.5);
+	_Center.Position = UDim2.new(0.5, 0, 0.5, 0);
+	_Center.Size = UDim2.new(0, 300, 0, 260);
+	_Center.BackgroundTransparency = 1;
+	_Center.ZIndex = 2;
+	_Center.Parent = _Bg;
+
+	local _Title = Instance.new('TextLabel');
+	_Title.AnchorPoint = Vector2.new(0.5, 0);
+	_Title.Position = UDim2.new(0.5, 0, 0, 0);
+	_Title.Size = UDim2.new(1, 0, 0, 42);
+	_Title.BackgroundTransparency = 1;
+	_Title.Font = Enum.Font.Code;
+	_Title.Text = 'RomazHub';
+	_Title.TextColor3 = Color3.fromRGB(0, 85, 255);
+	_Title.TextSize = 34;
+	_Title.TextStrokeColor3 = Color3.new(0, 0, 0);
+	_Title.TextStrokeTransparency = 0.5;
+	_Title.ZIndex = 3;
+	_Title.Parent = _Center;
+
+	local _Sub = Instance.new('TextLabel');
+	_Sub.AnchorPoint = Vector2.new(0.5, 0);
+	_Sub.Position = UDim2.new(0.5, 0, 0, 44);
+	_Sub.Size = UDim2.new(1, 0, 0, 16);
+	_Sub.BackgroundTransparency = 1;
+	_Sub.Font = Enum.Font.Code;
+	_Sub.Text = 'Preparing your experience...';
+	_Sub.TextColor3 = Color3.fromRGB(120, 120, 130);
+	_Sub.TextSize = 13;
+	_Sub.TextStrokeTransparency = 1;
+	_Sub.ZIndex = 3;
+	_Sub.Parent = _Center;
+
+	local _SpinOuter = Instance.new('Frame');
+	_SpinOuter.AnchorPoint = Vector2.new(0.5, 0);
+	_SpinOuter.Position = UDim2.new(0.5, 0, 0, 72);
+	_SpinOuter.Size = UDim2.fromOffset(60, 60);
+	_SpinOuter.BackgroundTransparency = 1;
+	_SpinOuter.BorderSizePixel = 0;
+	_SpinOuter.ZIndex = 3;
+	_SpinOuter.Parent = _Center;
+
+	local _TrackFrame = Instance.new('Frame');
+	_TrackFrame.Size = UDim2.new(1, 0, 1, 0);
+	_TrackFrame.BackgroundTransparency = 1;
+	_TrackFrame.ZIndex = 3;
+	_TrackFrame.Parent = _SpinOuter;
+	local _tc = Instance.new('UICorner');
+	_tc.CornerRadius = UDim.new(0.5, 0);
+	_tc.Parent = _TrackFrame;
+	local _ts = Instance.new('UIStroke');
+	_ts.Color = Color3.fromRGB(38, 38, 44);
+	_ts.Thickness = 4;
+	_ts.Parent = _TrackFrame;
+
+	local _dotDefs = {
+		{size=10, color=Color3.fromRGB(0, 85, 255),  offset=0};
+		{size=7,  color=Color3.fromRGB(0, 60, 190),  offset=-28};
+		{size=5,  color=Color3.fromRGB(0, 40, 130),  offset=-52};
+		{size=3,  color=Color3.fromRGB(0, 25, 80),   offset=-72};
+	};
+	local _spinDots = {};
+	for _, def in ipairs(_dotDefs) do
+		local d = Instance.new('Frame');
+		d.Size = UDim2.fromOffset(def.size, def.size);
+		d.AnchorPoint = Vector2.new(0.5, 0.5);
+		d.BackgroundColor3 = def.color;
+		d.BorderSizePixel = 0;
+		d.ZIndex = 4;
+		d.Parent = _SpinOuter;
+		local dc = Instance.new('UICorner');
+		dc.CornerRadius = UDim.new(0.5, 0);
+		dc.Parent = d;
+		_spinDots[#_spinDots + 1] = {frame = d, offset = def.offset};
+	end;
+
+	local _spinAngle = 0;
+	local _spinRadius = 26;
+	local _spinConn = RunService.Heartbeat:Connect(function(dt)
+		_spinAngle = _spinAngle + dt * 300;
+		for _, dot in ipairs(_spinDots) do
+			local r = math.rad(_spinAngle + dot.offset);
+			dot.frame.Position = UDim2.new(0.5, math.sin(r) * _spinRadius, 0.5, -math.cos(r) * _spinRadius);
+		end;
+	end);
+
+	local _LoadText = Instance.new('TextLabel');
+	_LoadText.AnchorPoint = Vector2.new(0.5, 0);
+	_LoadText.Position = UDim2.new(0.5, 0, 0, 144);
+	_LoadText.Size = UDim2.new(1, 0, 0, 18);
+	_LoadText.BackgroundTransparency = 1;
+	_LoadText.Font = Enum.Font.Code;
+	_LoadText.Text = 'Loading';
+	_LoadText.TextColor3 = Color3.fromRGB(190, 190, 200);
+	_LoadText.TextSize = 14;
+	_LoadText.TextStrokeTransparency = 1;
+	_LoadText.ZIndex = 3;
+	_LoadText.Parent = _Center;
+
+	local _Divider = Instance.new('Frame');
+	_Divider.AnchorPoint = Vector2.new(0.5, 0);
+	_Divider.Position = UDim2.new(0.5, 0, 0, 174);
+	_Divider.Size = UDim2.new(0.65, 0, 0, 1);
+	_Divider.BackgroundColor3 = Color3.fromRGB(45, 45, 52);
+	_Divider.BorderSizePixel = 0;
+	_Divider.ZIndex = 3;
+	_Divider.Parent = _Center;
+
+	local _tipsList = {
+		'Tip: Hold RightShift to toggle the menu open or closed.';
+		'Tip: Drag the toggle button to reposition it anywhere.';
+		'Tip: Use color pickers to customize highlight colors.';
+		'Tip: Sliders support both drag and click-to-set.';
+		'Tip: The watermark shows your live FPS and ping.';
+		'Tip: Save your config to auto-load settings next time.';
+		'Tip: Press RightControl to rebind your toggle key.';
+		'Tip: Most features work across all supported games.';
+	};
+
+	local _TipLabel = Instance.new('TextLabel');
+	_TipLabel.AnchorPoint = Vector2.new(0.5, 0);
+	_TipLabel.Position = UDim2.new(0.5, 0, 0, 186);
+	_TipLabel.Size = UDim2.new(1, -8, 0, 34);
+	_TipLabel.BackgroundTransparency = 1;
+	_TipLabel.Font = Enum.Font.Code;
+	_TipLabel.Text = _tipsList[1];
+	_TipLabel.TextColor3 = Color3.fromRGB(100, 100, 110);
+	_TipLabel.TextSize = 12;
+	_TipLabel.TextWrapped = true;
+	_TipLabel.TextStrokeTransparency = 1;
+	_TipLabel.ZIndex = 3;
+	_TipLabel.Parent = _Center;
+
+	local _DiscLabel = Instance.new('TextLabel');
+	_DiscLabel.AnchorPoint = Vector2.new(0.5, 0);
+	_DiscLabel.Position = UDim2.new(0.5, 0, 0, 228);
+	_DiscLabel.Size = UDim2.new(1, -8, 0, 26);
+	_DiscLabel.BackgroundTransparency = 1;
+	_DiscLabel.Font = Enum.Font.Code;
+	_DiscLabel.Text = 'discord.gg/romazhub  •  Buy Premium in our Discord';
+	_DiscLabel.TextColor3 = Color3.fromRGB(0, 85, 255);
+	_DiscLabel.TextSize = 12;
+	_DiscLabel.TextWrapped = true;
+	_DiscLabel.TextStrokeTransparency = 1;
+	_DiscLabel.ZIndex = 3;
+	_DiscLabel.Parent = _Center;
+
+	TweenService:Create(_FadeOverlay, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 1;
+	}):Play();
+
+	task.spawn(function()
+		local _dotCount = 0;
+		local _tipIndex = 1;
+		local _lastDotTime = tick();
+		local _lastTipTime = tick();
+		local _endTime = tick() + 5;
+
+		while tick() < _endTime do
+			task.wait();
+			local now = tick();
+
+			if now - _lastDotTime >= 0.45 then
+				_lastDotTime = now;
+				_dotCount = (_dotCount + 1) % 4;
+				_LoadText.Text = 'Loading' .. string.rep('.', _dotCount);
+			end;
+
+			if now - _lastTipTime >= 2.5 then
+				_lastTipTime = now;
+				_tipIndex = (_tipIndex % #_tipsList) + 1;
+				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play();
+				task.wait(0.22);
+				_TipLabel.Text = _tipsList[_tipIndex];
+				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 0}):Play();
+			end;
+		end;
+
+		_spinConn:Disconnect();
+		_bgGradConn:Disconnect();
+
+		TweenService:Create(_FadeOverlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			BackgroundTransparency = 0;
+		}):Play();
+		task.wait(0.55);
+		_LoadGui:Destroy();
+	end);
+end;
+-- ═════════════════════════════════════════════════════════════════════════════
 
 local Toggles = {};
 local Options = {};
@@ -62,13 +294,62 @@ local Library = {
 	ScreenGui = ScreenGui;
 };
 
+Library._lastTabHoverSoundTime = 0;
+
+-- ══ Pre-cached TweenInfo objects (avoid allocating on every interaction) ══
+Library._TI_ToggleShrink  = TweenInfo.new(0.07, Enum.EasingStyle.Quad);
+Library._TI_ToggleBounce  = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_BtnShrink     = TweenInfo.new(0.06, Enum.EasingStyle.Quad);
+Library._TI_BtnBounce     = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_Fast          = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_Bounce        = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_TabActive     = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_ToggleFill    = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_DropdownArrow = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+Library._TI_NotifyIn      = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+Library._TI_NotifyOut     = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In);
+
+-- ══ Shared sound pool (one instance per sound ID, reused everywhere) ══
+Library._SoundPool = {};
+function Library:PlaySound(soundId, volume)
+	local key = soundId .. '_' .. tostring(volume or 0.2);
+	local snd = Library._SoundPool[key];
+	if not snd then
+		snd = Instance.new('Sound');
+		snd.SoundId            = soundId;
+		snd.Volume             = volume or 0.2;
+		snd.RollOffMaxDistance = 0;
+		snd.Parent             = ScreenGui;
+		Library._SoundPool[key] = snd;
+	end;
+	pcall(function() snd:Play() end);
+end;
+
+function Library:PlayClickSound()
+	Library:PlaySound('rbxassetid://6895079853', 0.18);
+end;
+
+function Library:PlayHoverSound()
+	Library:PlaySound('rbxassetid://6026984224', 0.1);
+end;
+
+-- ── Device detection ─────────────────────────────────────────────────
+local function _IsMobile()
+	local lastInput = InputService:GetLastInputType()
+	if lastInput == Enum.UserInputType.Touch then return true end
+	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+	return (vp and vp.X < 600) or false
+end
+
+Library._NotifyOrder = 0
+
 local RainbowStep = 0
 local Hue = 0
 
 table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
 	RainbowStep = RainbowStep + Delta
 
-	if RainbowStep >= (1 / 60) then
+	if RainbowStep >= (1 / 20) then
 		RainbowStep = 0
 
 		Hue = Hue + (1 / 400);
@@ -260,30 +541,36 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 		TextColor3 = 'FontColor',
 	});
 
-	local IsHovering = false
+	local _tooltipConn = nil;
 
-	HoverInstance.MouseEnter:Connect(function()
+	local _enterConn = HoverInstance.MouseEnter:Connect(function()
 		if Library:MouseIsOverOpenedFrame() then
 			return
 		end
-
-		IsHovering = true
 
 		local mx, my = Library:GetMousePosition()
 		Tooltip.Position = UDim2.fromOffset(mx + 15, my + 12)
 		Tooltip.Visible = true
 
-		while IsHovering do
-			RunService.Heartbeat:Wait()
+		-- Use a single Heartbeat connection instead of a while-loop
+		if _tooltipConn then _tooltipConn:Disconnect() end;
+		_tooltipConn = RunService.Heartbeat:Connect(function()
 			mx, my = Library:GetMousePosition()
+			if Library.WindowOuter and not Library:IsMouseOverFrame(Library.WindowOuter) then
+				Tooltip.Visible = false
+				return
+			end
 			Tooltip.Position = UDim2.fromOffset(mx + 15, my + 12)
-		end
+		end);
 	end)
 
-	HoverInstance.MouseLeave:Connect(function()
-		IsHovering = false
+	local _leaveConn = HoverInstance.MouseLeave:Connect(function()
+		if _tooltipConn then _tooltipConn:Disconnect(); _tooltipConn = nil; end;
 		Tooltip.Visible = false
 	end)
+
+	Library:GiveSignal(_enterConn)
+	Library:GiveSignal(_leaveConn)
 end
 
 function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
@@ -387,16 +674,24 @@ function Library:RemoveFromRegistry(Instance)
 	local Data = Library.RegistryMap[Instance];
 
 	if Data then
-		for Idx = #Library.Registry, 1, -1 do
-			if Library.Registry[Idx] == Data then
-				table.remove(Library.Registry, Idx);
+		-- Use table.find for O(1)-ish removal instead of full scan
+		local regIdx = table.find(Library.Registry, Data);
+		if regIdx then
+			-- Swap-remove: move last element into this slot (avoids shifting)
+			local last = #Library.Registry;
+			if regIdx ~= last then
+				Library.Registry[regIdx] = Library.Registry[last];
 			end;
+			Library.Registry[last] = nil;
 		end;
 
-		for Idx = #Library.HudRegistry, 1, -1 do
-			if Library.HudRegistry[Idx] == Data then
-				table.remove(Library.HudRegistry, Idx);
+		local hudIdx = table.find(Library.HudRegistry, Data);
+		if hudIdx then
+			local last = #Library.HudRegistry;
+			if hudIdx ~= last then
+				Library.HudRegistry[hudIdx] = Library.HudRegistry[last];
 			end;
+			Library.HudRegistry[last] = nil;
 		end;
 
 		Library.RegistryMap[Instance] = nil;
@@ -405,13 +700,17 @@ end;
 
 function Library:UpdateColorsUsingRegistry()
 	for Idx, Object in next, Library.Registry do
-		for Property, ColorIdx in next, Object.Properties do
-			if type(ColorIdx) == 'string' then
-				Object.Instance[Property] = Library[ColorIdx];
-			elseif type(ColorIdx) == 'function' then
-				Object.Instance[Property] = ColorIdx()
-			end
-		end;
+		if Object and Object.Instance and Object.Instance.Parent then
+			for Property, ColorIdx in next, Object.Properties do
+				pcall(function()
+					if type(ColorIdx) == 'string' then
+						Object.Instance[Property] = Library[ColorIdx];
+					elseif type(ColorIdx) == 'function' then
+						Object.Instance[Property] = ColorIdx()
+					end
+				end)
+			end;
+		end
 	end;
 end;
 
@@ -420,10 +719,34 @@ function Library:GiveSignal(Signal)
 end
 
 function Library:Unload()
+	Library.Unloaded = true;
+
 	for Idx = #Library.Signals, 1, -1 do
 		local Connection = table.remove(Library.Signals, Idx)
 		Connection:Disconnect()
 	end
+
+	-- Clean up pooled sounds
+	for key, snd in next, Library._SoundPool do
+		snd:Destroy();
+		Library._SoundPool[key] = nil;
+	end;
+
+	-- Clean up fade proxy
+	if Library._FadeProxy then
+		Library._FadeProxy:Destroy();
+		Library._FadeProxy = nil;
+	end;
+	Library._FadeEntries = nil;
+	Library._TransparencyCache = {};
+
+	if _touchChangedConn then _touchChangedConn:Disconnect(); _touchChangedConn = nil; end;
+	if _touchBeganConn then _touchBeganConn:Disconnect(); _touchBeganConn = nil; end;
+
+	-- Clear registry
+	table.clear(Library.Registry);
+	table.clear(Library.RegistryMap);
+	table.clear(Library.HudRegistry);
 
 	if Library.OnUnload then
 		Library.OnUnload()
@@ -440,6 +763,12 @@ Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
 	if Library.RegistryMap[Instance] then
 		Library:RemoveFromRegistry(Instance);
 	end;
+	-- Clean up fade cache so destroyed instances don't leak memory
+	if Library._TransparencyCache and Library._TransparencyCache[Instance] then
+		Library._TransparencyCache[Instance] = nil;
+	end;
+	-- Invalidate fade entries so they get rebuilt on next toggle
+	Library._FadeEntries = nil;
 end))
 
 local BaseAddons = {};
@@ -1530,7 +1859,7 @@ local Outer = Library:Create('Frame', {
 local Label = Library:CreateLabel({
     Size = UDim2.new(1, -4, 1, 0);
     Position = UDim2.new(0, 2, 0, 0);
-    TextSize = 14;
+    TextSize = 15;
     Text = Button.Text;
     ZIndex = 6;
     Parent = Inner;
@@ -1540,7 +1869,7 @@ do
     Label.TextTruncate = Enum.TextTruncate.None
     local _tc = Instance.new('UITextSizeConstraint')
     _tc.MinTextSize = 8
-    _tc.MaxTextSize = 14
+    _tc.MaxTextSize = 15
     _tc.Parent = Label
 end
 
@@ -1607,9 +1936,9 @@ end
 
 				local _sc = Button.Outer:FindFirstChildWhichIsA('UIScale');
 				if _sc then
-					TweenService:Create(_sc, TweenInfo.new(0.06, Enum.EasingStyle.Quad), { Scale = 0.95 }):Play();
+					TweenService:Create(_sc, Library._TI_BtnShrink, { Scale = 0.95 }):Play();
 					task.delay(0.08, function()
-						TweenService:Create(_sc, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
+						TweenService:Create(_sc, Library._TI_BtnBounce, { Scale = 1 }):Play();
 					end);
 				end;
 
@@ -1641,6 +1970,11 @@ end
 
 		InitEvents(Button)
 
+		function Button:SetText(text)
+			Button.Text = text
+			Button.Label.Text = text
+		end
+
 		function Button:AddTooltip(tooltip)
 			if type(tooltip) == 'string' then
 				Library:AddToolTip(tooltip, self.Outer)
@@ -1659,8 +1993,13 @@ end
 			SubButton.Outer, SubButton.Inner, SubButton.Label = CreateBaseButton(SubButton)
 
 			SubButton.Outer.Position = UDim2.new(1, 3, 0, 0)
-			SubButton.Outer.Size = UDim2.fromOffset(self.Outer.AbsoluteSize.X - 2, self.Outer.AbsoluteSize.Y)
+			SubButton.Outer.Size = UDim2.new(1, 0, 1, 0)
 			SubButton.Outer.Parent = self.Outer
+
+			function SubButton:SetText(text)
+				SubButton.Text = text
+				SubButton.Label.Text = text
+			end
 
 			function SubButton:AddTooltip(tooltip)
 				if type(tooltip) == 'string' then
@@ -2058,42 +2397,54 @@ end
 	end
 
 	function Funcs:AddDivider()
-		local Groupbox = self;
+		local Groupbox  = self
 		local Container = self.Container
 
-		local Divider = {
-			Type = 'Divider',
-		}
+		Groupbox:AddBlank(4)
 
-		Groupbox:AddBlank(2);
+		local DividerFrame = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			BorderSizePixel        = 0;
+			Size                   = UDim2.new(1, -4, 0, 10);
+			ZIndex                 = 6;
+			Parent                 = Container;
+		})
+
 		local DividerOuter = Library:Create('Frame', {
-			BackgroundColor3 = Color3.new(0, 0, 0);
-			BorderColor3 = Color3.new(0, 0, 0);
-			Size = UDim2.new(1, -4, 0, 5);
-			ZIndex = 5;
-			Parent = Container;
-		});
+			BackgroundColor3 = Library.OutlineColor;
+			BorderSizePixel  = 0;
+			Size             = UDim2.new(1, 0, 1, 0);
+			ZIndex           = 6;
+			Parent           = DividerFrame;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = DividerOuter })
 
 		local DividerInner = Library:Create('Frame', {
-			BackgroundColor3 = Library.MainColor;
-			BorderColor3 = Library.OutlineColor;
-			BorderMode = Enum.BorderMode.Inset;
-			Size = UDim2.new(1, 0, 1, 0);
-			ZIndex = 6;
-			Parent = DividerOuter;
-		});
+			BackgroundColor3 = Library.BackgroundColor;
+			BorderSizePixel  = 0;
+			Position         = UDim2.new(0, 1, 0, 1);
+			Size             = UDim2.new(1, -2, 1, -2);
+			ZIndex           = 6;
+			Parent           = DividerOuter;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = DividerInner })
 
-		Library:AddToRegistry(DividerOuter, {
-			BorderColor3 = 'Black';
-		});
+		local DividerTopEdge = Library:Create('Frame', {
+			BackgroundColor3       = Library.AccentColor;
+			BackgroundTransparency = 0.5;
+			BorderSizePixel        = 0;
+			Size                   = UDim2.new(1, 0, 0, 1);
+			ZIndex                 = 7;
+			Parent                 = DividerInner;
+		})
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = DividerTopEdge })
 
-		Library:AddToRegistry(DividerInner, {
-			BackgroundColor3 = 'MainColor';
-			BorderColor3 = 'OutlineColor';
-		});
+		Library:AddToRegistry(DividerOuter,   { BackgroundColor3 = 'OutlineColor'    })
+		Library:AddToRegistry(DividerInner,   { BackgroundColor3 = 'BackgroundColor' })
+		Library:AddToRegistry(DividerTopEdge, { BackgroundColor3 = 'AccentColor'     })
 
-		Groupbox:AddBlank(9);
-		Groupbox:Resize();
+		Groupbox:AddBlank(4)
+		Groupbox:Resize()
 	end
 
 	function Funcs:AddInput(Idx, Info)
@@ -2291,7 +2642,7 @@ end
 		local ToggleOuter = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BorderColor3 = Color3.new(0, 0, 0);
-			Size = UDim2.new(0, 13, 0, 13);
+			Size = UDim2.new(0, 16, 0, 16);
 			ZIndex = 5;
 			Parent = Container;
 		});
@@ -2317,7 +2668,7 @@ end
 		local ToggleLabel = Library:CreateLabel({
 			Size = UDim2.new(0, 216, 1, 0);
 			Position = UDim2.new(1, 6, 0, 0);
-			TextSize = 14;
+			TextSize = 15;
 			Text = Info.Text;
 			TextXAlignment = Enum.TextXAlignment.Left;
 			TextTruncate = Enum.TextTruncate.AtEnd;
@@ -2359,7 +2710,7 @@ function Toggle:Display()
 	local targetBG     = Toggle.Value and Library.AccentColor     or Library.MainColor;
 	local targetBorder = Toggle.Value and Library.AccentColorDark  or Library.OutlineColor;
 
-	TweenService:Create(ToggleInner, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(ToggleInner, Library._TI_ToggleFill, {
 		BackgroundColor3 = targetBG;
 	}):Play();
 
@@ -2391,21 +2742,17 @@ end;
 			Library:UpdateDependencyBoxes();
 		end;
 
-local _ToggleClickSfx = Instance.new('Sound');
-_ToggleClickSfx.SoundId            = 'rbxassetid://6895079853';
-_ToggleClickSfx.Volume             = 0.18;
-_ToggleClickSfx.RollOffMaxDistance = 0;
-_ToggleClickSfx.Parent             = ToggleOuter;
+-- Persistent UIScale for bounce — reused across clicks (no allocation per click)
+local _ToggleBounceScale = Instance.new('UIScale');
+_ToggleBounceScale.Scale  = 1;
+_ToggleBounceScale.Parent = ToggleOuter;
 
 ToggleRegion.InputBegan:Connect(function(Input)
 	if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
-		pcall(function() _ToggleClickSfx:Play() end);
-		-- Tiny bounce on the toggle box
-		local _ts = Instance.new('UIScale'); _ts.Scale = 1; _ts.Parent = ToggleOuter;
-		TweenService:Create(_ts, TweenInfo.new(0.07, Enum.EasingStyle.Quad), { Scale = 0.88 }):Play();
+		Library:PlayClickSound();
+		TweenService:Create(_ToggleBounceScale, Library._TI_ToggleShrink, { Scale = 0.88 }):Play();
 		task.delay(0.07, function()
-			TweenService:Create(_ts, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play();
-			task.delay(0.2, function() _ts:Destroy() end);
+			TweenService:Create(_ToggleBounceScale, Library._TI_ToggleBounce, { Scale = 1 }):Play();
 		end);
 		Toggle:SetValue(not Toggle.Value);
 		Library:AttemptSave();
@@ -2456,7 +2803,7 @@ end);
 		if not Info.Compact then
 			Library:CreateLabel({
 				Size = UDim2.new(1, 0, 0, 10);
-				TextSize = 14;
+				TextSize = 15;
 				Text = Info.Text;
 				TextXAlignment = Enum.TextXAlignment.Left;
 				TextYAlignment = Enum.TextYAlignment.Bottom;
@@ -2470,7 +2817,7 @@ end);
 		local SliderOuter = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BorderColor3 = Color3.new(0, 0, 0);
-			Size = UDim2.new(1, -4, 0, 13);
+			Size = UDim2.new(1, -4, 0, 17);
 			ZIndex = 5;
 			Parent = Container;
 		});
@@ -2506,7 +2853,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		local Fill = Library:Create('Frame', {
 			BackgroundColor3 = Library.AccentColor;
-			BorderColor3 = Library.AccentColorDark;
+			BorderSizePixel = 0;
 			Size = UDim2.new(0, 0, 1, 0);
 			ZIndex = 7;
 			Parent = SliderInner;
@@ -2514,7 +2861,6 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		Library:AddToRegistry(Fill, {
 			BackgroundColor3 = 'AccentColor';
-			BorderColor3 = 'AccentColorDark';
 		});
 
 		local HideBorderRight = Library:Create('Frame', {
@@ -2530,11 +2876,20 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 			BackgroundColor3 = 'AccentColor';
 		});
 
+		local FillStroke = Library:Create('UIStroke', {
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+			Color = Library.AccentColor;
+			Thickness = 1.5;
+			Transparency = 1;
+			Parent = Fill;
+		});
+		Library:AddToRegistry(FillStroke, { Color = 'AccentColor' });
+
 		local DisplayLabel = Library:CreateLabel({
 			Size = UDim2.new(1, 0, 1, 0);
-			TextSize = 14;
-			Text = 'Infinite';
-			ZIndex = 9;
+			TextSize = 13;
+			Text = '';
+			ZIndex = 10;
 			Parent = SliderInner;
 		});
 
@@ -2549,7 +2904,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
 		function Slider:UpdateColors()
 			Fill.BackgroundColor3 = Library.AccentColor;
-			Fill.BorderColor3 = Library.AccentColorDark;
+			FillStroke.Color = Library.AccentColor;
 		end;
 
 		function Slider:Display()
@@ -2567,6 +2922,9 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 			Fill.Size = UDim2.new(0, X, 1, 0);
 
 			HideBorderRight.Visible = not (X == Slider.MaxSize or X == 0);
+
+			local _ratio = math.clamp((Slider.Value - Slider.Min) / math.max(Slider.Max - Slider.Min, 1), 0, 1);
+			FillStroke.Transparency = 1 - _ratio;
 		end;
 
 		function Slider:OnChanged(Func)
@@ -2690,7 +3048,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 		if not Info.Compact then
 			local DropdownLabel = Library:CreateLabel({
 				Size = UDim2.new(1, 0, 0, 10);
-				TextSize = 14;
+				TextSize = 15;
 				Text = Info.Text;
 				TextXAlignment = Enum.TextXAlignment.Left;
 				TextYAlignment = Enum.TextYAlignment.Bottom;
@@ -2999,7 +3357,7 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 function Dropdown:OpenDropdown()
 	ListOuter.Visible = true;
 	Library.OpenedFrames[ListOuter] = true;
-	TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(DropdownArrow, Library._TI_DropdownArrow, {
 		Rotation = 180;
 	}):Play();
 end;
@@ -3007,7 +3365,7 @@ end;
 function Dropdown:CloseDropdown()
 	ListOuter.Visible = false;
 	Library.OpenedFrames[ListOuter] = nil;
-	TweenService:Create(DropdownArrow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(DropdownArrow, Library._TI_DropdownArrow, {
 		Rotation = 0;
 	}):Play();
 end;
@@ -3052,7 +3410,7 @@ end;
 			end;
 		end);
 
-		InputService.InputBegan:Connect(function(Input)
+		Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				local AbsPos, AbsSize = ListOuter.AbsolutePosition, ListOuter.AbsoluteSize;
 				local px, py = Input.Position.X, Input.Position.Y;
@@ -3063,7 +3421,7 @@ end;
 					Dropdown:CloseDropdown();
 				end;
 			end;
-		end);
+		end));
 
 		Dropdown:BuildDropdownList();
 		Dropdown:Display();
@@ -3197,25 +3555,51 @@ end;
 do
 	Library.NotificationArea = Library:Create('Frame', {
 		BackgroundTransparency = 1;
-		Position = UDim2.new(0, 0, 0, 40);
-		Size = UDim2.new(0, 300, 0, 200);
-		ZIndex = 100;
-		Parent = ScreenGui;
-	});
+		BorderSizePixel        = 0;
+		ClipsDescendants       = false;
+		ZIndex                 = 100;
+		Parent                 = ScreenGui;
+	})
 
-	Library:Create('UIListLayout', {
-		Padding = UDim.new(0, 4);
-		FillDirection = Enum.FillDirection.Vertical;
-		SortOrder = Enum.SortOrder.LayoutOrder;
-		Parent = Library.NotificationArea;
-	});
+	local _notifyLayout = Library:Create('UIListLayout', {
+		Padding           = UDim.new(0, 5);
+		FillDirection     = Enum.FillDirection.Vertical;
+		SortOrder         = Enum.SortOrder.LayoutOrder;
+		Parent            = Library.NotificationArea;
+	})
+
+	local function _UpdateNotificationAreaLayout()
+		local mobile = _IsMobile()
+		local vp     = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
+		               or Vector2.new(800, 600)
+		local notifW = math.min(360, vp.X - 20)
+		if mobile then
+			Library.NotificationArea.AnchorPoint = Vector2.new(0.5, 1)
+			Library.NotificationArea.Position    = UDim2.new(0.5, 0, 1, -10)
+			Library.NotificationArea.Size        = UDim2.new(0, notifW, 0, 400)
+			_notifyLayout.VerticalAlignment      = Enum.VerticalAlignment.Bottom
+			_notifyLayout.HorizontalAlignment    = Enum.HorizontalAlignment.Center
+		else
+			Library.NotificationArea.AnchorPoint = Vector2.new(1, 0)
+			Library.NotificationArea.Position    = UDim2.new(1, -10, 0, 55)
+			Library.NotificationArea.Size        = UDim2.new(0, notifW, 1, -65)
+			_notifyLayout.VerticalAlignment      = Enum.VerticalAlignment.Top
+			_notifyLayout.HorizontalAlignment    = Enum.HorizontalAlignment.Right
+		end
+	end
+
+	_UpdateNotificationAreaLayout()
+
+	InputService.LastInputTypeChanged:Connect(function(_inputType)
+		_UpdateNotificationAreaLayout()
+	end)
 
 -- ── Watermark ───────────────────────────────────────────────────────────
 local WatermarkOuter = Library:Create('Frame', {
 	BackgroundColor3 = Library.OutlineColor;
 	BorderSizePixel  = 0;
 	Position         = UDim2.fromOffset(100, 10);
-	Size             = UDim2.fromOffset(213, 28);
+	Size             = UDim2.fromOffset(236, 32);
 	ZIndex           = 200;
 	Visible          = false;
 	Parent           = ScreenGui;
@@ -3366,14 +3750,9 @@ local WatermarkScale = Instance.new('UIScale');
 WatermarkScale.Scale  = 1;
 WatermarkScale.Parent = WatermarkOuter;
 
-local WmHoverSound = Instance.new('Sound');
-WmHoverSound.SoundId             = 'rbxassetid://6026984224';
-WmHoverSound.Volume              = 0.12;
-WmHoverSound.RollOffMaxDistance  = 0;
-WmHoverSound.Parent              = WatermarkOuter;
-
-local wmFastTween   = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-local wmBounceTween = TweenInfo.new(0.25, Enum.EasingStyle.Back,  Enum.EasingDirection.Out);
+-- Sound instances pooled via Library:PlayHoverSound() / Library:PlayClickSound()
+local wmFastTween   = Library._TI_Fast;
+local wmBounceTween = Library._TI_Bounce;
 
 local wmHovered = false;
 
@@ -3388,7 +3767,7 @@ end;
 WatermarkOuter.MouseEnter:Connect(function()
 	if wmHovered then return end;
 	wmHovered = true;
-	pcall(function() WmHoverSound:Play() end);
+	Library:PlayHoverSound();
 
 	TweenService:Create(WatermarkInner, wmFastTween, {
 		BackgroundColor3 = WmLighten(Library.MainColor, 0.05);
@@ -3421,7 +3800,7 @@ WatermarkOuter.MouseLeave:Connect(function()
 end);
 
 WatermarkOuter.TouchTap:Connect(function()
-	pcall(function() WmHoverSound:Play() end);
+	Library:PlayHoverSound();
 	TweenService:Create(WatermarkInner, wmFastTween, { BackgroundColor3 = WmLighten(Library.MainColor, 0.05) }):Play();
 	TweenService:Create(WatermarkAccentBar, wmFastTween, { Size = UDim2.new(1, 0, 0, 3) }):Play();
 	TweenService:Create(WatermarkScale, wmFastTween, { Scale = 1.04 }):Play();
@@ -3804,10 +4183,17 @@ function Groupbox:Resize()
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
 end;
 
+local _popLayout = Container:FindFirstChildWhichIsA('UIListLayout')
+if _popLayout then
+    _popLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+        Groupbox:Resize()
+    end)
+end
+
 		Groupbox.Container = Container;
 		setmetatable(Groupbox, BaseGroupbox);
 		Groupbox:AddBlank(3);
-		Groupbox:Resize();
+		task.defer(function() Groupbox:Resize() end);
 
 		return Groupbox;
 	end;
@@ -3903,16 +4289,8 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 		BtnScale.Scale  = 1;
 		BtnScale.Parent = BtnOuter;
 
-		local _BtnHoverSfx = Instance.new('Sound');
-		_BtnHoverSfx.SoundId = 'rbxassetid://6026984224'; _BtnHoverSfx.Volume = 0.12;
-		_BtnHoverSfx.RollOffMaxDistance = 0; _BtnHoverSfx.Parent = BtnOuter;
-
-		local _BtnClickSfx = Instance.new('Sound');
-		_BtnClickSfx.SoundId = 'rbxassetid://6895079853'; _BtnClickSfx.Volume = 0.3;
-		_BtnClickSfx.RollOffMaxDistance = 0; _BtnClickSfx.Parent = BtnOuter;
-
-		local _ftw = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-		local _btw = TweenInfo.new(0.25, Enum.EasingStyle.Back,  Enum.EasingDirection.Out);
+		local _ftw = Library._TI_Fast;
+		local _btw = Library._TI_Bounce;
 
 		local _bHov  = false;
 		local _bDrag = false;
@@ -3924,7 +4302,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 
 		BtnOuter.MouseEnter:Connect(function()
 			if _bHov then return end; _bHov = true;
-			pcall(function() _BtnHoverSfx:Play() end);
+			Library:PlayHoverSound();
 			TweenService:Create(BtnScale, _ftw, { Scale = 1.04 }):Play();
 			TweenService:Create(BtnInner, _ftw, { BackgroundColor3 = _lighten(Library.MainColor, 0.05) }):Play();
 		end);
@@ -3939,7 +4317,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 			and Input.UserInputType ~= Enum.UserInputType.Touch then return end;
 
 			_bDrag = false;
-			TweenService:Create(BtnScale, TweenInfo.new(0.07, Enum.EasingStyle.Quad), { Scale = 0.91 }):Play();
+			TweenService:Create(BtnScale, Library._TI_ToggleShrink, { Scale = 0.91 }):Play();
 
 			local SX = Input.Position.X; local SY = Input.Position.Y;
 			local OX = Input.Position.X - BtnOuter.AbsolutePosition.X;
@@ -3963,7 +4341,7 @@ Library:AddToRegistry(BtnLabel, { TextColor3 = 'FontColor' });
 				TweenService:Create(BtnScale, _btw, { Scale = _bHov and 1.04 or 1 }):Play();
 				TweenService:Create(BtnInner, _ftw, { BackgroundColor3 = Library.MainColor }):Play();
 				if not _bDrag then
-					pcall(function() _BtnClickSfx:Play() end);
+					Library:PlayClickSound();
 					Popout:Toggle();
 				end;
 				_bDrag = false;
@@ -3979,9 +4357,8 @@ end;
 function Library:CreateToggleButton(Text)
     Text = Text or 'Menu';
 
-    local TweenService = game:GetService('TweenService');
-    local fastTween  = TweenInfo.new(0.1,  Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
-    local bounceTween = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+    local fastTween  = Library._TI_Fast;
+    local bounceTween = Library._TI_Bounce;
 
     local ButtonOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.OutlineColor or Color3.fromRGB(60, 60, 60);
@@ -4123,17 +4500,7 @@ Size             = UDim2.fromOffset(130, 28);
     Scale.Scale  = 1;
     Scale.Parent = ButtonOuter;
 
-    local ClickSound = Instance.new('Sound');
-    ClickSound.SoundId  = 'rbxassetid://6895079853';
-    ClickSound.Volume   = 0.35;
-    ClickSound.RollOffMaxDistance = 0;
-    ClickSound.Parent   = ButtonOuter;
-
-    local HoverSound = Instance.new('Sound');
-    HoverSound.SoundId  = 'rbxassetid://6026984224';
-    HoverSound.Volume   = 0.12;
-    HoverSound.RollOffMaxDistance = 0;
-    HoverSound.Parent   = ButtonOuter;
+    -- Sounds pooled via Library:PlayClickSound() / Library:PlayHoverSound()
 
     local isHovered  = false;
     local isDragging = false;
@@ -4149,7 +4516,7 @@ Size             = UDim2.fromOffset(130, 28);
     ButtonOuter.MouseEnter:Connect(function()
         if isHovered then return end;
         isHovered = true;
-        pcall(function() HoverSound:Play() end);
+        Library:PlayHoverSound();
 
         TweenService:Create(ButtonInner, fastTween, {
             BackgroundColor3 = lighten(Library.MainColor, 0.05);
@@ -4210,11 +4577,11 @@ end;
 
         isDragging = false;
 
-        TweenService:Create(Scale, TweenInfo.new(0.07, Enum.EasingStyle.Quad), {
+        TweenService:Create(Scale, Library._TI_ToggleShrink, {
             Scale = 0.91;
         }):Play();
 
-        TweenService:Create(ButtonInner, TweenInfo.new(0.07), {
+        TweenService:Create(ButtonInner, Library._TI_ToggleShrink, {
             BackgroundColor3 = lighten(Library.MainColor, -0.04);
         }):Play();
 
@@ -4223,8 +4590,7 @@ end;
         local ObjX   = Input.Position.X - ButtonOuter.AbsolutePosition.X;
         local ObjY   = Input.Position.Y - ButtonOuter.AbsolutePosition.Y;
 
-		local UIS = game:GetService('UserInputService');
-		local moved = UIS.InputChanged:Connect(function(changed)
+		local moved = InputService.InputChanged:Connect(function(changed)
     	if changed.UserInputType ~= Enum.UserInputType.MouseMovement
     	and changed.UserInputType ~= Enum.UserInputType.Touch then return end;
 
@@ -4244,7 +4610,7 @@ end;
 		end);
 
         local releaseConn;
-        releaseConn = game:GetService('UserInputService').InputEnded:Connect(function(endInput)
+        releaseConn = InputService.InputEnded:Connect(function(endInput)
             if endInput ~= Input then return end;
             releaseConn:Disconnect();
 
@@ -4261,7 +4627,7 @@ end;
             }):Play();
 
             if not isDragging then
-                pcall(function() ClickSound:Play() end);
+                Library:PlayClickSound();
 
                 TweenService:Create(AccentBar, TweenInfo.new(0.05), {
                     BackgroundColor3 = Color3.new(1, 1, 1);
@@ -4410,7 +4776,7 @@ function Library:CreateHomeTab(Window, Info)
 		Library:CreateLabel({
 			Size           = UDim2.new(1, 0, 0, 18);
 			Position       = UDim2.new(0, 4, 0, 2);
-			TextSize       = 14;
+			TextSize       = 15;
 			Text           = gInfo.Name;
 			TextXAlignment = Enum.TextXAlignment.Left;
 			ZIndex         = 5;
@@ -4437,11 +4803,18 @@ function Groupbox:Resize()
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
 end;
 
+local _homeLayout = Container:FindFirstChildWhichIsA('UIListLayout')
+if _homeLayout then
+    _homeLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+        Groupbox:Resize()
+    end)
+end
+
 		Groupbox.Container = Container;
 		setmetatable(Groupbox, BaseGroupbox);
 
 		Groupbox:AddBlank(3);
-		Groupbox:Resize();
+		task.defer(function() Groupbox:Resize() end);
 
 		HomeTab.Groupboxes[gInfo.Name] = Groupbox;
 		return Groupbox;
@@ -4552,8 +4925,7 @@ end;
 	local TipIndex  = 1;
 	local LastTipSwap = tick();
 
-	local RunService = game:GetService('RunService');
-	local Players    = game:GetService('Players');
+	-- use top-level cached services
 
 	local WelcomeMessages = {
 		'✦  Welcome to ' .. ScriptName .. '  ✦',
@@ -4621,97 +4993,289 @@ end;
 	return HomeTab;
 end;
 
-function Library:Notify(Text, Time)
-	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14);
+function Library:Notify(InfoOrText, Time)
+	-- Supports old API: Library:Notify("text", 3)
+	-- Supports new API: Library:Notify({ Text = "text", Time = 3, Buttons = { {Text="OK", Func=fn} } })
+	local Info
+	if type(InfoOrText) == 'table' then
+		Info = InfoOrText
+	else
+		Info = { Text = tostring(InfoOrText or ''), Time = Time }
+	end
 
-	YSize = YSize + 7
+	local Text       = tostring(Info.Text or '')
+	local duration   = type(Info.Time) == 'number' and Info.Time or 5
+	local Buttons    = (type(Info.Buttons) == 'table' and #Info.Buttons > 0) and Info.Buttons or nil
+	local hasButtons = Buttons ~= nil
 
+	Library:PlaySound('rbxassetid://6042053827', 0.22)
+
+	local mobile = _IsMobile()
+	local vp     = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
+	               or Vector2.new(800, 600)
+	local cardW  = math.min(360, vp.X - 20)
+	local textW  = cardW - 22
+	local XSize, YSize = Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(textW, math.huge))
+	local textH  = math.max(YSize, 14)
+
+	-- cardH = 2(topbar) + 10(toppad) + textH + 8(botpad) [+ 29 if buttons]
+	local btnAreaH = hasButtons and 29 or 0
+	local cardH    = math.max(2 + 10 + textH + 8 + btnAreaH, 34)
+	local totalH   = cardH + 2
+
+	Library._NotifyOrder = Library._NotifyOrder + 1
+
+	-- Outer: clips the card during slide animation
 	local NotifyOuter = Library:Create('Frame', {
-		BorderColor3 = Color3.new(0, 0, 0);
-		Position = UDim2.new(0, 100, 0, 10);
-		Size = UDim2.new(0, 0, 0, YSize);
-		ClipsDescendants = true;
-		ZIndex = 100;
-		Parent = Library.NotificationArea;
-	});
+		BackgroundTransparency = 1;
+		BorderSizePixel        = 0;
+		ClipsDescendants       = true;
+		ZIndex                 = 100;
+		LayoutOrder            = Library._NotifyOrder;
+		Parent                 = Library.NotificationArea;
+	})
 
+	-- Shell: OutlineColor bg acts as 1px border
+	local NotifyShell = Library:Create('Frame', {
+		BackgroundColor3 = Library.OutlineColor;
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, cardH);
+		ZIndex           = 101;
+		Parent           = NotifyOuter;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = NotifyShell })
+	Library:AddToRegistry(NotifyShell, { BackgroundColor3 = 'OutlineColor' }, true)
+
+	-- Drop shadow (behind shell via lower ZIndex, child so it moves with shell)
+	local ShadowFrame = Library:Create('Frame', {
+		BackgroundColor3       = Color3.new(0, 0, 0);
+		BackgroundTransparency = 0.5;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0, -1, 0, 2);
+		Size                   = UDim2.new(1, 2, 1, 2);
+		ZIndex                 = 100;
+		Parent                 = NotifyShell;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 7); Parent = ShadowFrame })
+
+	-- Inner panel: MainColor, 1px inset
 	local NotifyInner = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
-		BorderColor3 = Library.OutlineColor;
-		BorderMode = Enum.BorderMode.Inset;
-		Size = UDim2.new(1, 0, 1, 0);
-		ZIndex = 101;
-		Parent = NotifyOuter;
-	});
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 1, 0, 1);
+		Size             = UDim2.new(1, -2, 1, -2);
+		ZIndex           = 102;
+		Parent           = NotifyShell;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = NotifyInner })
+	Library:AddToRegistry(NotifyInner, { BackgroundColor3 = 'MainColor' }, true)
 
-	Library:AddToRegistry(NotifyInner, {
-		BackgroundColor3 = 'MainColor';
-		BorderColor3 = 'OutlineColor';
-	}, true);
+	-- Accent stroke
+	local _notifyStroke = Library:Create('UIStroke', {
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+		Color           = Library.AccentColor;
+		Thickness       = 1;
+		Transparency    = 0.6;
+		Parent          = NotifyInner;
+	})
+	Library:AddToRegistry(_notifyStroke, { Color = 'AccentColor' }, true)
 
-	local InnerFrame = Library:Create('Frame', {
-		BackgroundColor3 = Color3.new(1, 1, 1);
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, 1, 0, 1);
-		Size = UDim2.new(1, -2, 1, -2);
-		ZIndex = 102;
-		Parent = NotifyInner;
-	});
-
-	local Gradient = Library:Create('UIGradient', {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Library:GetDarkerColor(Library.MainColor)),
-			ColorSequenceKeypoint.new(1, Library.MainColor),
-		});
-		Rotation = -90;
-		Parent = InnerFrame;
-	});
-
-	Library:AddToRegistry(Gradient, {
-		Color = function()
-			return ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Library:GetDarkerColor(Library.MainColor)),
-				ColorSequenceKeypoint.new(1, Library.MainColor),
-			});
-		end
-	});
-
-	local NotifyLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 4, 0, 0);
-		Size = UDim2.new(1, -4, 1, 0);
-		Text = Text;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		TextSize = 14;
-		ZIndex = 103;
-		Parent = InnerFrame;
-	});
-
-	local LeftColor = Library:Create('Frame', {
+	-- Top accent bar (2px)
+	local TopAccent = Library:Create('Frame', {
 		BackgroundColor3 = Library.AccentColor;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, -1, 0, -1);
-		Size = UDim2.new(0, 3, 1, 2);
-		ZIndex = 104;
-		Parent = NotifyOuter;
-	});
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, 2);
+		ZIndex           = 104;
+		Parent           = NotifyInner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = TopAccent })
+	Library:AddToRegistry(TopAccent, { BackgroundColor3 = 'AccentColor' }, true)
 
-	Library:AddToRegistry(LeftColor, {
-		BackgroundColor3 = 'AccentColor';
-	}, true);
+	-- Bottom accent bar (1px, subtle)
+	local BottomAccent = Library:Create('Frame', {
+		BackgroundColor3       = Library.AccentColor;
+		BackgroundTransparency = 0.75;
+		BorderSizePixel        = 0;
+		AnchorPoint            = Vector2.new(0, 1);
+		Position               = UDim2.new(0, 0, 1, 0);
+		Size                   = UDim2.new(1, 0, 0, 1);
+		ZIndex                 = 104;
+		Parent                 = NotifyInner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = BottomAccent })
+	Library:AddToRegistry(BottomAccent, { BackgroundColor3 = 'AccentColor' }, true)
 
-NotifyOuter.Size = UDim2.new(0, 0, 0, YSize);
-TweenService:Create(NotifyOuter, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-	Size = UDim2.new(0, XSize + 8 + 4, 0, YSize);
-}):Play();
+	-- Text label (starts at y=12: 2px topbar + 10px padding)
+	local NotifyLabel = Library:CreateLabel({
+		Position       = UDim2.new(0, 10, 0, 12);
+		Size           = UDim2.new(1, -20, 0, textH);
+		Text           = Text;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		TextWrapped    = true;
+		TextSize       = 14;
+		ZIndex         = 104;
+		Parent         = NotifyInner;
+	})
 
-task.spawn(function()
-	task.wait(Time or 5);
-	TweenService:Create(NotifyOuter, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		Size = UDim2.new(0, 0, 0, YSize);
-	}):Play();
-	task.wait(0.3);
-	NotifyOuter:Destroy();
-end);
+	-- Dismiss helper (shared by timer and button clicks; dismissed flag prevents double-fire)
+	local dismissed = false
+	local function _dismiss()
+		if dismissed then return end
+		dismissed = true
+		if mobile then
+			TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
+				Size = UDim2.new(0, cardW, 0, 0)
+			}):Play()
+		else
+			TweenService:Create(NotifyOuter, Library._TI_NotifyOut, {
+				Size = UDim2.new(0, 0, 0, totalH)
+			}):Play()
+		end
+		task.delay(0.26, function()
+			pcall(function() NotifyOuter:Destroy() end)
+		end)
+	end
+
+	-- Optional button row
+	if hasButtons then
+		local dividerY = 2 + 10 + textH + 8
+
+		local ButtonDivider = Library:Create('Frame', {
+			BackgroundColor3 = Library.OutlineColor;
+			BorderSizePixel  = 0;
+			Position         = UDim2.new(0, 4, 0, dividerY);
+			Size             = UDim2.new(1, -8, 0, 1);
+			ZIndex           = 104;
+			Parent           = NotifyInner;
+		})
+		Library:AddToRegistry(ButtonDivider, { BackgroundColor3 = 'OutlineColor' }, true)
+
+		local ButtonRow = Library:Create('Frame', {
+			BackgroundTransparency = 1;
+			BorderSizePixel        = 0;
+			Position               = UDim2.new(0, 4, 0, dividerY + 5);
+			Size                   = UDim2.new(1, -8, 0, 20);
+			ZIndex                 = 104;
+			Parent                 = NotifyInner;
+		})
+		Library:Create('UIListLayout', {
+			Padding           = UDim.new(0, 4);
+			FillDirection     = Enum.FillDirection.Horizontal;
+			SortOrder         = Enum.SortOrder.LayoutOrder;
+			VerticalAlignment = Enum.VerticalAlignment.Center;
+			Parent            = ButtonRow;
+		})
+
+		local innerW    = cardW - 2 - 8
+		local btnCount  = #Buttons
+		local totalGaps = (btnCount - 1) * 4
+		local btnW      = math.floor((innerW - totalGaps) / btnCount)
+
+		local normalColor = Library.MainColor
+		local hoverColor  = Color3.fromRGB(38, 38, 38)
+
+		for i, BtnInfo in ipairs(Buttons) do
+			local BtnOuter = Library:Create('Frame', {
+				BackgroundColor3 = Library.OutlineColor;
+				BorderSizePixel  = 0;
+				Size             = UDim2.fromOffset(btnW, 20);
+				LayoutOrder      = i;
+				ZIndex           = 104;
+				Parent           = ButtonRow;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = BtnOuter })
+			Library:AddToRegistry(BtnOuter, { BackgroundColor3 = 'OutlineColor' }, true)
+
+			local BtnInner = Library:Create('Frame', {
+				BackgroundColor3 = Library.MainColor;
+				BorderSizePixel  = 0;
+				Position         = UDim2.new(0, 1, 0, 1);
+				Size             = UDim2.new(1, -2, 1, -2);
+				ZIndex           = 105;
+				Parent           = BtnOuter;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = BtnInner })
+			Library:AddToRegistry(BtnInner, { BackgroundColor3 = 'MainColor' }, true)
+
+			local BtnTopBar = Library:Create('Frame', {
+				BackgroundColor3 = Library.AccentColor;
+				BorderSizePixel  = 0;
+				Size             = UDim2.new(1, 0, 0, 2);
+				ZIndex           = 106;
+				Parent           = BtnInner;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 3); Parent = BtnTopBar })
+			Library:AddToRegistry(BtnTopBar, { BackgroundColor3 = 'AccentColor' }, true)
+
+			Library:CreateLabel({
+				Size           = UDim2.new(1, 0, 1, 0);
+				TextSize       = 12;
+				Text           = tostring(BtnInfo.Text or '');
+				TextXAlignment = Enum.TextXAlignment.Center;
+				ZIndex         = 106;
+				Parent         = BtnInner;
+			})
+
+			BtnOuter.MouseEnter:Connect(function()
+				TweenService:Create(BtnInner, TweenInfo.new(0.1), { BackgroundColor3 = hoverColor }):Play()
+			end)
+			BtnOuter.MouseLeave:Connect(function()
+				TweenService:Create(BtnInner, TweenInfo.new(0.1), { BackgroundColor3 = normalColor }):Play()
+			end)
+			BtnOuter.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+					pcall(BtnInfo.Func)
+					_dismiss()
+				end
+			end)
+		end
+	end
+
+	-- Progress track (sibling to shell, positioned below it)
+	local ProgressTrack = Library:Create('Frame', {
+		BackgroundColor3 = Library.BackgroundColor;
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 0, 0, cardH);
+		Size             = UDim2.new(1, 0, 0, 2);
+		ZIndex           = 105;
+		Parent           = NotifyOuter;
+	})
+	Library:AddToRegistry(ProgressTrack, { BackgroundColor3 = 'BackgroundColor' }, true)
+
+	local ProgressFill = Library:Create('Frame', {
+		BackgroundColor3 = Library.AccentColor;
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 1, 0);
+		ZIndex           = 106;
+		Parent           = ProgressTrack;
+	})
+	Library:AddToRegistry(ProgressFill, { BackgroundColor3 = 'AccentColor' }, true)
+
+	-- Slide-in animation
+	if mobile then
+		NotifyOuter.Size = UDim2.new(0, cardW, 0, 0)
+		TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
+			Size = UDim2.new(0, cardW, 0, totalH)
+		}):Play()
+	else
+		NotifyOuter.Size = UDim2.new(0, 0, 0, totalH)
+		TweenService:Create(NotifyOuter, Library._TI_NotifyIn, {
+			Size = UDim2.new(0, cardW, 0, totalH)
+		}):Play()
+	end
+
+	-- Progress drain + auto-dismiss
+	task.spawn(function()
+		task.wait(0.3)
+		TweenService:Create(
+			ProgressFill,
+			TweenInfo.new(math.max(duration - 0.3, 0.1), Enum.EasingStyle.Linear),
+			{ Size = UDim2.new(0, 0, 1, 0) }
+		):Play()
+		task.wait(duration)
+		_dismiss()
+	end)
 end;
 
 function Library:CreateWindow(...)
@@ -4761,6 +5325,7 @@ function Library:CreateWindow(...)
 		BackgroundColor3 = 'OutlineColor';
 	});
 
+	Library.WindowOuter = Outer;
 	Library:MakeDraggable(Outer, 30);
 
 	local Inner = Library:Create('Frame', {
@@ -5049,27 +5614,11 @@ end);
 			BackgroundColor3 = 'AccentColor';
 		});
 
-		local TabHoverSound = Instance.new('Sound');
-		TabHoverSound.SoundId            = 'rbxassetid://6026984224';
-		TabHoverSound.Volume             = 0.1;
-		TabHoverSound.RollOffMaxDistance = 0;
-		TabHoverSound.Parent             = TabButton;
-
-		local TabClickSound = Instance.new('Sound');
-		TabClickSound.SoundId            = 'rbxassetid://6895079853';
-		TabClickSound.Volume             = 0.2;
-		TabClickSound.RollOffMaxDistance = 0;
-		TabClickSound.Parent             = TabButton;
-
-		local tabTween = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+		-- Sounds pooled via Library:PlayHoverSound() / Library:PlayClickSound()
+		local tabTween = Library._TI_TabActive;
 
 TabButton.MouseEnter:Connect(function()
     if Blocker.BackgroundTransparency == 0 then return end;
-    local _now = tick()
-    if _now - Library._lastTabHoverSoundTime >= 0.22 then
-        Library._lastTabHoverSoundTime = _now
-        pcall(function() TabHoverSound:Play() end);
-    end
 			TweenService:Create(TabButtonLabel, tabTween, {
 				TextColor3 = Library.AccentColor;
 			}):Play();
@@ -5086,7 +5635,7 @@ TabButton.MouseEnter:Connect(function()
 
 		TabButton.TouchTap:Connect(function()
 			if Blocker.BackgroundTransparency == 0 then return end;
-			pcall(function() TabHoverSound:Play() end);
+			Library:PlayHoverSound();
 			TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.AccentColor }):Play();
 			task.delay(0.2, function()
 				TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.FontColor }):Play();
@@ -5141,20 +5690,22 @@ TabButton.MouseEnter:Connect(function()
 			Parent = RightSide;
 		});
 
-		--[[for _, Side in next, { LeftSide, RightSide } do
-			Side:WaitForChild('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-				Side.CanvasSize = UDim2.fromOffset(0, Side.UIListLayout.AbsoluteContentSize.Y);
-			end);
-		end;]]
+		-- Auto-resize columns so groupboxes never overflow into adjacent ones
+		do
+			local function _resizeCol(col)
+				local ll = col:FindFirstChildWhichIsA('UIListLayout')
+				if ll then col.Size = UDim2.new(0.5, -12 + 2, 0, ll.AbsoluteContentSize.Y + 16) end
+			end
+			LeftSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(LeftSide) end)
+			RightSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(RightSide) end)
+		end
 
-		local tabActiveTween = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+		local tabActiveTween = Library._TI_TabActive;
 
 		function Tab:ShowTab()
 			for _, Tab in next, Window.Tabs do
 				Tab:HideTab();
 			end;
-
-			pcall(function() TabClickSound:Play() end);
 
 			TweenService:Create(Blocker, tabActiveTween, {
 				BackgroundTransparency = 0;
@@ -5221,7 +5772,6 @@ local BoxInner = Library:Create('Frame', {
     BorderSizePixel  = 0;
     Size             = UDim2.new(1, -2, 1, -2);
     Position         = UDim2.new(0, 1, 0, 1);
-    ClipsDescendants = true;
     ZIndex           = 4;
     Parent           = BoxOuter;
 });
@@ -5250,7 +5800,7 @@ local BoxInner = Library:Create('Frame', {
 			local GroupboxLabel = Library:CreateLabel({
 				Size = UDim2.new(1, 0, 0, 18);
 				Position = UDim2.new(0, 4, 0, 2);
-				TextSize = 14;
+				TextSize = 15;
 				Text = Info.Name;
 				TextXAlignment = Enum.TextXAlignment.Left;
 				ZIndex = 5;
@@ -5277,11 +5827,19 @@ function Groupbox:Resize()
     BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
 end;
 
+-- Auto-resize whenever layout content changes (fixes timing/race conditions)
+local _tabLayout = Container:FindFirstChildWhichIsA('UIListLayout')
+if _tabLayout then
+    _tabLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+        Groupbox:Resize()
+    end)
+end
+
 			Groupbox.Container = Container;
 			setmetatable(Groupbox, BaseGroupbox);
 
 Groupbox:AddBlank(6);
-Groupbox:Resize();
+task.defer(function() Groupbox:Resize() end);
 
 Tab.Groupboxes[Info.Name] = Groupbox;
 
@@ -5504,6 +6062,7 @@ Tab.Groupboxes[Info.Name] = Groupbox;
 
 		TabButton.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+				Library:PlayClickSound();
 				Tab:ShowTab();
 			end;
 		end);
@@ -5528,7 +6087,7 @@ Tab.Groupboxes[Info.Name] = Groupbox;
 		Parent = ScreenGui;
 	});
 
-local TransparencyCache = {};
+Library._TransparencyCache = Library._TransparencyCache or {}; local TransparencyCache = Library._TransparencyCache;
 -- Toggled boolean moved to start of script
 local Fading = false;
 
@@ -5548,6 +6107,32 @@ function Library:Toggle()
 
 		if Toggled then
 			Outer.Visible = true;
+
+			-- Remove any leftover open-scale from a previous toggle
+			local _prev = Outer:FindFirstChild('__OpenScale')
+			if _prev then _prev:Destroy() end
+			local _openScale = Instance.new('UIScale')
+			_openScale.Name   = '__OpenScale'
+			_openScale.Parent = Outer
+
+			local _origPos = Outer.Position
+
+			if not Library._hasOpened then
+				-- First execute: dramatic full reveal from center
+				Library._hasOpened = true
+				_openScale.Scale = 0.04
+				Outer.Position = UDim2.new(_origPos.X.Scale, _origPos.X.Offset, _origPos.Y.Scale, _origPos.Y.Offset + 30)
+				TweenService:Create(_openScale, TweenInfo.new(0.48, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				TweenService:Create(Outer,      TweenInfo.new(0.38, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = _origPos }):Play()
+				task.delay(0.52, function() pcall(function() if _openScale.Parent then _openScale:Destroy() end end) end)
+			else
+				-- Re-open (Open UI button / keybind): quick bounce
+				_openScale.Scale = 0.88
+				Outer.Position = UDim2.new(_origPos.X.Scale, _origPos.X.Offset, _origPos.Y.Scale, _origPos.Y.Offset + 18)
+				TweenService:Create(_openScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				TweenService:Create(Outer,      TweenInfo.new(0.20, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = _origPos }):Play()
+				task.delay(0.26, function() pcall(function() if _openScale.Parent then _openScale:Destroy() end end) end)
+			end
 
 			task.spawn(function()
 				local State = InputService.MouseIconEnabled;
@@ -5587,41 +6172,83 @@ function Library:Toggle()
 			end);
 		end;
 
-		for _, Desc in next, Outer:GetDescendants() do
-			local Properties = {};
+		-- ── Optimized fade: single proxy tween drives ALL transparencies ──
+		-- Build cache once on first toggle; reuse on subsequent toggles.
+		if not Library._FadeEntries then
+			Library._FadeEntries = {};
+			for _, Desc in next, Outer:GetDescendants() do
+				local Props = {};
 
-			if Desc:IsA('ImageLabel') then
-				table.insert(Properties, 'ImageTransparency');
-				table.insert(Properties, 'BackgroundTransparency');
-			elseif Desc:IsA('TextLabel') or Desc:IsA('TextBox') then
-				table.insert(Properties, 'TextTransparency');
-			elseif Desc:IsA('Frame') or Desc:IsA('ScrollingFrame') then
-				table.insert(Properties, 'BackgroundTransparency');
-			elseif Desc:IsA('UIStroke') then
-				table.insert(Properties, 'Transparency');
-			end;
-
-			local Cache = TransparencyCache[Desc];
-
-			if (not Cache) then
-				Cache = {};
-				TransparencyCache[Desc] = Cache;
-			end;
-
-			for _, Prop in next, Properties do
-				if not Cache[Prop] then
-					Cache[Prop] = Desc[Prop];
+				if Desc:IsA('ImageLabel') then
+					Props[#Props+1] = 'ImageTransparency';
+					Props[#Props+1] = 'BackgroundTransparency';
+				elseif Desc:IsA('TextLabel') or Desc:IsA('TextBox') then
+					Props[#Props+1] = 'TextTransparency';
+				elseif Desc:IsA('Frame') or Desc:IsA('ScrollingFrame') then
+					Props[#Props+1] = 'BackgroundTransparency';
+				elseif Desc:IsA('UIStroke') then
+					Props[#Props+1] = 'Transparency';
 				end;
 
-				if Cache[Prop] == 1 then
-					continue;
-				end;
+				if #Props > 0 then
+					local Cache = TransparencyCache[Desc];
+					if not Cache then
+						Cache = {};
+						TransparencyCache[Desc] = Cache;
+					end;
 
-				TweenService:Create(Desc, TweenInfo.new(FadeTime, Enum.EasingStyle.Linear), { [Prop] = Toggled and Cache[Prop] or 1 }):Play();
+					for _, Prop in next, Props do
+						if not Cache[Prop] then
+							Cache[Prop] = Desc[Prop];
+						end;
+						-- Only track entries that actually need animation
+						if Cache[Prop] ~= 1 then
+							Library._FadeEntries[#Library._FadeEntries+1] = { Desc, Prop, Cache[Prop] };
+						end;
+					end;
+				end;
 			end;
 		end;
 
+		-- Single proxy NumberValue drives the fade via one tween
+		if not Library._FadeProxy then
+			Library._FadeProxy = Instance.new('NumberValue');
+			Library._FadeProxy.Parent = ScreenGui;
+		end;
+
+		local proxy = Library._FadeProxy;
+		proxy.Value = Toggled and 1 or 0;
+
+		local entries = Library._FadeEntries;
+		local targetAlpha = Toggled and 0 or 1; -- 0 = show (use cached), 1 = hide
+
+		local fadeConn;
+		fadeConn = proxy:GetPropertyChangedSignal('Value'):Connect(function()
+			local alpha = proxy.Value; -- 0→1 = showing→hiding
+			for i = 1, #entries do
+				local entry = entries[i];
+				local desc, prop, cached = entry[1], entry[2], entry[3];
+				if desc.Parent then
+					desc[prop] = cached + (1 - cached) * alpha;
+				end;
+			end;
+		end);
+
+		TweenService:Create(proxy, TweenInfo.new(FadeTime, Enum.EasingStyle.Linear), {
+			Value = targetAlpha;
+		}):Play();
+
 		task.wait(FadeTime);
+		fadeConn:Disconnect();
+
+		-- Snap final values
+		for i = 1, #entries do
+			local entry = entries[i];
+			local desc, prop, cached = entry[1], entry[2], entry[3];
+			if desc.Parent then
+				desc[prop] = Toggled and cached or 1;
+			end;
+		end;
 
 		Outer.Visible = Toggled;
 
@@ -5929,21 +6556,8 @@ function Library:CreateToolImagePreview(parent, yPos)
     return preview
 end
 
-task.defer(function()
-    while not Library.Unloaded do
-        for _, panel in ipairs(Library._ToolPanels) do
-            pcall(function()
-                if panel.outer and panel.outer.Parent then
-                    panel.outer.BackgroundColor3 = Library.OutlineColor
-                end
-                if panel.inner and panel.inner.Parent then
-                    panel.inner.BackgroundColor3 = Library.MainColor
-                end
-            end)
-        end
-        task.wait(2)
-    end
-end)
+-- Tool panels sync colors via registry (AddToRegistry) instead of polling loop.
+-- No infinite loop needed — UpdateColorsUsingRegistry handles it.
 
 getgenv().Library = Library
 return Library
