@@ -35,216 +35,252 @@ ScreenGui.Parent = CoreGui;
 
 -- ══ Loading Screen ═══════════════════════════════════════════════════════════
 do
+	local _cardBg = Color3.fromRGB(20, 20, 24);
+
 	local _LoadGui = Instance.new('ScreenGui');
 	ProtectGui(_LoadGui);
-	_LoadGui.Name = 'RomazHubLoader';
-	_LoadGui.DisplayOrder = 200;
+	_LoadGui.Name           = 'RomazHubLoader';
+	_LoadGui.DisplayOrder   = 200;
 	_LoadGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
-	_LoadGui.ResetOnSpawn = false;
-	_LoadGui.Parent = CoreGui;
+	_LoadGui.IgnoreGuiInset = true;
+	_LoadGui.ResetOnSpawn   = false;
+	_LoadGui.Parent         = CoreGui;
 
+	-- Full-screen dark background
 	local _Bg = Instance.new('Frame');
-	_Bg.Size = UDim2.new(1, 0, 1, 0);
-	_Bg.BackgroundColor3 = Color3.fromRGB(14, 14, 16);
-	_Bg.BorderSizePixel = 0;
-	_Bg.ZIndex = 1;
-	_Bg.Parent = _LoadGui;
+	_Bg.Size              = UDim2.new(1, 0, 1, 0);
+	_Bg.BackgroundColor3  = Color3.fromRGB(12, 12, 14);
+	_Bg.BorderSizePixel   = 0;
+	_Bg.ZIndex            = 1;
+	_Bg.Parent            = _LoadGui;
 
+	-- Slowly rotating blue→black gradient for depth
 	local _BgGrad = Instance.new('UIGradient');
 	_BgGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 16, 36));
-		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 14, 16));
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 12));
+		ColorSequenceKeypoint.new(0,   Color3.fromRGB(10, 16, 38));
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 12, 14));
+		ColorSequenceKeypoint.new(1,   Color3.fromRGB(8,  8,  10));
 	});
 	_BgGrad.Rotation = 135;
-	_BgGrad.Parent = _Bg;
+	_BgGrad.Parent   = _Bg;
 
-	local _bgAngle = 135;
+	local _bgAngle    = 135;
 	local _bgGradConn = RunService.Heartbeat:Connect(function(dt)
-		_bgAngle = (_bgAngle + dt * 6) % 360;
+		_bgAngle       = (_bgAngle + dt * 5) % 360;
 		_BgGrad.Rotation = _bgAngle;
 	end);
 
+	-- Black overlay: starts opaque (entrance fade) → transparent → opaque (exit fade)
 	local _FadeOverlay = Instance.new('Frame');
-	_FadeOverlay.Size = UDim2.new(1, 0, 1, 0);
-	_FadeOverlay.BackgroundColor3 = Color3.new(0, 0, 0);
+	_FadeOverlay.Size                 = UDim2.new(1, 0, 1, 0);
+	_FadeOverlay.BackgroundColor3     = Color3.new(0, 0, 0);
 	_FadeOverlay.BackgroundTransparency = 0;
-	_FadeOverlay.BorderSizePixel = 0;
-	_FadeOverlay.ZIndex = 100;
-	_FadeOverlay.Parent = _LoadGui;
+	_FadeOverlay.BorderSizePixel      = 0;
+	_FadeOverlay.ZIndex               = 100;
+	_FadeOverlay.Parent               = _LoadGui;
 
-	local _Center = Instance.new('Frame');
-	_Center.AnchorPoint = Vector2.new(0.5, 0.5);
-	_Center.Position = UDim2.new(0.5, 0, 0.5, 0);
-	_Center.Size = UDim2.new(0, 300, 0, 260);
-	_Center.BackgroundTransparency = 1;
-	_Center.ZIndex = 2;
-	_Center.Parent = _Bg;
+	-- Floating card
+	local _Card = Instance.new('Frame');
+	_Card.AnchorPoint    = Vector2.new(0.5, 0.5);
+	_Card.Position       = UDim2.new(0.5, 0, 0.5, 0);
+	_Card.Size           = UDim2.new(0, 280, 0, 240);
+	_Card.BackgroundColor3 = _cardBg;
+	_Card.BorderSizePixel  = 0;
+	_Card.ZIndex         = 2;
+	_Card.Parent         = _Bg;
+	local _cardCorner = Instance.new('UICorner');
+	_cardCorner.CornerRadius = UDim.new(0, 8);
+	_cardCorner.Parent       = _Card;
+	local _cardStroke = Instance.new('UIStroke');
+	_cardStroke.Color       = Color3.fromRGB(0, 85, 255);
+	_cardStroke.Transparency = 0.72;
+	_cardStroke.Thickness   = 1;
+	_cardStroke.Parent      = _Card;
 
+	-- Title
 	local _Title = Instance.new('TextLabel');
-	_Title.AnchorPoint = Vector2.new(0.5, 0);
-	_Title.Position = UDim2.new(0.5, 0, 0, 0);
-	_Title.Size = UDim2.new(1, 0, 0, 42);
+	_Title.AnchorPoint          = Vector2.new(0.5, 0);
+	_Title.Position             = UDim2.new(0.5, 0, 0, 16);
+	_Title.Size                 = UDim2.new(1, -24, 0, 34);
 	_Title.BackgroundTransparency = 1;
-	_Title.Font = Enum.Font.Code;
-	_Title.Text = 'RomazHub';
-	_Title.TextColor3 = Color3.fromRGB(0, 85, 255);
-	_Title.TextSize = 34;
-	_Title.TextStrokeColor3 = Color3.new(0, 0, 0);
-	_Title.TextStrokeTransparency = 0.5;
-	_Title.ZIndex = 3;
-	_Title.Parent = _Center;
+	_Title.Font                 = Enum.Font.Code;
+	_Title.Text                 = 'RomazHub';
+	_Title.TextColor3           = Color3.fromRGB(0, 85, 255);
+	_Title.TextSize             = 28;
+	_Title.TextStrokeColor3     = Color3.new(0, 0, 0);
+	_Title.TextStrokeTransparency = 0.55;
+	_Title.ZIndex               = 3;
+	_Title.Parent               = _Card;
 
+	-- Subtitle
 	local _Sub = Instance.new('TextLabel');
-	_Sub.AnchorPoint = Vector2.new(0.5, 0);
-	_Sub.Position = UDim2.new(0.5, 0, 0, 44);
-	_Sub.Size = UDim2.new(1, 0, 0, 16);
+	_Sub.AnchorPoint          = Vector2.new(0.5, 0);
+	_Sub.Position             = UDim2.new(0.5, 0, 0, 52);
+	_Sub.Size                 = UDim2.new(1, -24, 0, 13);
 	_Sub.BackgroundTransparency = 1;
-	_Sub.Font = Enum.Font.Code;
-	_Sub.Text = 'Preparing your experience...';
-	_Sub.TextColor3 = Color3.fromRGB(120, 120, 130);
-	_Sub.TextSize = 13;
+	_Sub.Font                 = Enum.Font.Code;
+	_Sub.Text                 = 'Preparing your experience...';
+	_Sub.TextColor3           = Color3.fromRGB(105, 105, 118);
+	_Sub.TextSize             = 12;
 	_Sub.TextStrokeTransparency = 1;
-	_Sub.ZIndex = 3;
-	_Sub.Parent = _Center;
+	_Sub.ZIndex               = 3;
+	_Sub.Parent               = _Card;
+
+	-- ── Spinner (rotating arc via ClipsDescendants + mask) ───────────────
+	local _spinSz = 54;
 
 	local _SpinOuter = Instance.new('Frame');
-	_SpinOuter.AnchorPoint = Vector2.new(0.5, 0);
-	_SpinOuter.Position = UDim2.new(0.5, 0, 0, 72);
-	_SpinOuter.Size = UDim2.fromOffset(60, 60);
+	_SpinOuter.AnchorPoint    = Vector2.new(0.5, 0);
+	_SpinOuter.Position       = UDim2.new(0.5, 0, 0, 74);
+	_SpinOuter.Size           = UDim2.fromOffset(_spinSz, _spinSz);
 	_SpinOuter.BackgroundTransparency = 1;
-	_SpinOuter.BorderSizePixel = 0;
-	_SpinOuter.ZIndex = 3;
-	_SpinOuter.Parent = _Center;
+	_SpinOuter.ZIndex         = 3;
+	_SpinOuter.Parent         = _Card;
 
-	local _TrackFrame = Instance.new('Frame');
-	_TrackFrame.Size = UDim2.new(1, 0, 1, 0);
-	_TrackFrame.BackgroundTransparency = 1;
-	_TrackFrame.ZIndex = 3;
-	_TrackFrame.Parent = _SpinOuter;
-	local _tc = Instance.new('UICorner');
-	_tc.CornerRadius = UDim.new(0.5, 0);
-	_tc.Parent = _TrackFrame;
-	local _ts = Instance.new('UIStroke');
-	_ts.Color = Color3.fromRGB(38, 38, 44);
-	_ts.Thickness = 4;
-	_ts.Parent = _TrackFrame;
+	-- Dark track ring (sits behind the arc)
+	local _Track = Instance.new('Frame');
+	_Track.Size               = UDim2.fromOffset(_spinSz, _spinSz);
+	_Track.BackgroundTransparency = 1;
+	_Track.ZIndex             = 3;
+	_Track.Parent             = _SpinOuter;
+	local _trackCorner = Instance.new('UICorner');
+	_trackCorner.CornerRadius = UDim.new(0.5, 0);
+	_trackCorner.Parent       = _Track;
+	local _trackStroke = Instance.new('UIStroke');
+	_trackStroke.Color        = Color3.fromRGB(40, 40, 50);
+	_trackStroke.Thickness    = 4;
+	_trackStroke.Parent       = _Track;
 
-	local _dotDefs = {
-		{size=10, color=Color3.fromRGB(0, 85, 255),  offset=0};
-		{size=7,  color=Color3.fromRGB(0, 60, 190),  offset=-28};
-		{size=5,  color=Color3.fromRGB(0, 40, 130),  offset=-52};
-		{size=3,  color=Color3.fromRGB(0, 25, 80),   offset=-72};
-	};
-	local _spinDots = {};
-	for _, def in ipairs(_dotDefs) do
-		local d = Instance.new('Frame');
-		d.Size = UDim2.fromOffset(def.size, def.size);
-		d.AnchorPoint = Vector2.new(0.5, 0.5);
-		d.BackgroundColor3 = def.color;
-		d.BorderSizePixel = 0;
-		d.ZIndex = 4;
-		d.Parent = _SpinOuter;
-		local dc = Instance.new('UICorner');
-		dc.CornerRadius = UDim.new(0.5, 0);
-		dc.Parent = d;
-		_spinDots[#_spinDots + 1] = {frame = d, offset = def.offset};
-	end;
+	-- SpinGroup: clipped circle that rotates; mask inside hides the right half,
+	-- making the accent arc look like a spinning half-arc
+	local _SpinGroup = Instance.new('Frame');
+	_SpinGroup.Size             = UDim2.fromOffset(_spinSz, _spinSz);
+	_SpinGroup.BackgroundTransparency = 1;
+	_SpinGroup.ClipsDescendants = true;
+	_SpinGroup.ZIndex           = 4;
+	_SpinGroup.Parent           = _SpinOuter;
+	local _sgCorner = Instance.new('UICorner');
+	_sgCorner.CornerRadius = UDim.new(0.5, 0);
+	_sgCorner.Parent       = _SpinGroup;
+
+	-- Accent arc ring (full circle; right half is hidden by mask)
+	local _ArcRing = Instance.new('Frame');
+	_ArcRing.Size               = UDim2.fromOffset(_spinSz, _spinSz);
+	_ArcRing.BackgroundTransparency = 1;
+	_ArcRing.ZIndex             = 4;
+	_ArcRing.Parent             = _SpinGroup;
+	local _arcCorner = Instance.new('UICorner');
+	_arcCorner.CornerRadius = UDim.new(0.5, 0);
+	_arcCorner.Parent       = _ArcRing;
+	local _arcStroke = Instance.new('UIStroke');
+	_arcStroke.Color     = Color3.fromRGB(0, 85, 255);
+	_arcStroke.Thickness = 4;
+	_arcStroke.Parent    = _ArcRing;
+
+	-- Mask: dark rectangle covering right half of SpinGroup, clipped to circle
+	local _Mask = Instance.new('Frame');
+	_Mask.Size            = UDim2.new(0.5, 1, 1, 0);
+	_Mask.Position        = UDim2.new(0.5, 0, 0, 0);
+	_Mask.BackgroundColor3 = _cardBg;
+	_Mask.BorderSizePixel  = 0;
+	_Mask.ZIndex          = 5;
+	_Mask.Parent          = _SpinGroup;
 
 	local _spinAngle = 0;
-	local _spinRadius = 26;
-	local _spinConn = RunService.Heartbeat:Connect(function(dt)
-		_spinAngle = _spinAngle + dt * 300;
-		for _, dot in ipairs(_spinDots) do
-			local r = math.rad(_spinAngle + dot.offset);
-			dot.frame.Position = UDim2.new(0.5, math.sin(r) * _spinRadius, 0.5, -math.cos(r) * _spinRadius);
-		end;
+	local _spinConn  = RunService.Heartbeat:Connect(function(dt)
+		_spinAngle       = _spinAngle + dt * 260;
+		_SpinGroup.Rotation = _spinAngle;
 	end);
 
+	-- Loading text
 	local _LoadText = Instance.new('TextLabel');
-	_LoadText.AnchorPoint = Vector2.new(0.5, 0);
-	_LoadText.Position = UDim2.new(0.5, 0, 0, 144);
-	_LoadText.Size = UDim2.new(1, 0, 0, 18);
+	_LoadText.AnchorPoint          = Vector2.new(0.5, 0);
+	_LoadText.Position             = UDim2.new(0.5, 0, 0, 136);
+	_LoadText.Size                 = UDim2.new(1, -24, 0, 16);
 	_LoadText.BackgroundTransparency = 1;
-	_LoadText.Font = Enum.Font.Code;
-	_LoadText.Text = 'Loading';
-	_LoadText.TextColor3 = Color3.fromRGB(190, 190, 200);
-	_LoadText.TextSize = 14;
+	_LoadText.Font                 = Enum.Font.Code;
+	_LoadText.Text                 = 'Loading';
+	_LoadText.TextColor3           = Color3.fromRGB(175, 175, 188);
+	_LoadText.TextSize             = 13;
 	_LoadText.TextStrokeTransparency = 1;
-	_LoadText.ZIndex = 3;
-	_LoadText.Parent = _Center;
+	_LoadText.ZIndex               = 3;
+	_LoadText.Parent               = _Card;
 
+	-- Divider
 	local _Divider = Instance.new('Frame');
-	_Divider.AnchorPoint = Vector2.new(0.5, 0);
-	_Divider.Position = UDim2.new(0.5, 0, 0, 174);
-	_Divider.Size = UDim2.new(0.65, 0, 0, 1);
-	_Divider.BackgroundColor3 = Color3.fromRGB(45, 45, 52);
-	_Divider.BorderSizePixel = 0;
-	_Divider.ZIndex = 3;
-	_Divider.Parent = _Center;
+	_Divider.AnchorPoint    = Vector2.new(0.5, 0);
+	_Divider.Position       = UDim2.new(0.5, 0, 0, 162);
+	_Divider.Size           = UDim2.new(0.78, 0, 0, 1);
+	_Divider.BackgroundColor3 = Color3.fromRGB(38, 38, 50);
+	_Divider.BorderSizePixel  = 0;
+	_Divider.ZIndex         = 3;
+	_Divider.Parent         = _Card;
 
+	-- Cycling tips
 	local _tipsList = {
 		'Tip: Hold RightShift to toggle the menu open or closed.';
-		'Tip: Drag the toggle button to reposition it anywhere.';
-		'Tip: Use color pickers to customize highlight colors.';
+		'Tip: Drag the toggle button anywhere on screen.';
+		'Tip: Use color pickers to customise highlight colors.';
 		'Tip: Sliders support both drag and click-to-set.';
-		'Tip: The watermark shows your live FPS and ping.';
-		'Tip: Save your config to auto-load settings next time.';
+		'Tip: The watermark shows live FPS and ping.';
+		'Tip: Save your config to auto-load next session.';
 		'Tip: Press RightControl to rebind your toggle key.';
 		'Tip: Most features work across all supported games.';
 	};
 
 	local _TipLabel = Instance.new('TextLabel');
-	_TipLabel.AnchorPoint = Vector2.new(0.5, 0);
-	_TipLabel.Position = UDim2.new(0.5, 0, 0, 186);
-	_TipLabel.Size = UDim2.new(1, -8, 0, 34);
+	_TipLabel.AnchorPoint          = Vector2.new(0.5, 0);
+	_TipLabel.Position             = UDim2.new(0.5, 0, 0, 170);
+	_TipLabel.Size                 = UDim2.new(1, -28, 0, 32);
 	_TipLabel.BackgroundTransparency = 1;
-	_TipLabel.Font = Enum.Font.Code;
-	_TipLabel.Text = _tipsList[1];
-	_TipLabel.TextColor3 = Color3.fromRGB(100, 100, 110);
-	_TipLabel.TextSize = 12;
-	_TipLabel.TextWrapped = true;
+	_TipLabel.Font                 = Enum.Font.Code;
+	_TipLabel.Text                 = _tipsList[1];
+	_TipLabel.TextColor3           = Color3.fromRGB(90, 90, 105);
+	_TipLabel.TextSize             = 11;
+	_TipLabel.TextWrapped          = true;
 	_TipLabel.TextStrokeTransparency = 1;
-	_TipLabel.ZIndex = 3;
-	_TipLabel.Parent = _Center;
+	_TipLabel.ZIndex               = 3;
+	_TipLabel.Parent               = _Card;
 
+	-- Discord / premium line
 	local _DiscLabel = Instance.new('TextLabel');
-	_DiscLabel.AnchorPoint = Vector2.new(0.5, 0);
-	_DiscLabel.Position = UDim2.new(0.5, 0, 0, 228);
-	_DiscLabel.Size = UDim2.new(1, -8, 0, 26);
+	_DiscLabel.AnchorPoint          = Vector2.new(0.5, 0);
+	_DiscLabel.Position             = UDim2.new(0.5, 0, 0, 208);
+	_DiscLabel.Size                 = UDim2.new(1, -28, 0, 22);
 	_DiscLabel.BackgroundTransparency = 1;
-	_DiscLabel.Font = Enum.Font.Code;
-	_DiscLabel.Text = 'discord.gg/romazhub  •  Buy Premium in our Discord';
-	_DiscLabel.TextColor3 = Color3.fromRGB(0, 85, 255);
-	_DiscLabel.TextSize = 12;
-	_DiscLabel.TextWrapped = true;
+	_DiscLabel.Font                 = Enum.Font.Code;
+	_DiscLabel.Text                 = 'discord.gg/romazhub  •  Buy Premium in Discord';
+	_DiscLabel.TextColor3           = Color3.fromRGB(0, 85, 255);
+	_DiscLabel.TextSize             = 11;
+	_DiscLabel.TextWrapped          = true;
 	_DiscLabel.TextStrokeTransparency = 1;
-	_DiscLabel.ZIndex = 3;
-	_DiscLabel.Parent = _Center;
+	_DiscLabel.ZIndex               = 3;
+	_DiscLabel.Parent               = _Card;
 
+	-- Fade in (black → transparent)
 	TweenService:Create(_FadeOverlay, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		BackgroundTransparency = 1;
 	}):Play();
 
 	task.spawn(function()
-		local _dotCount = 0;
-		local _tipIndex = 1;
-		local _lastDotTime = tick();
-		local _lastTipTime = tick();
-		local _endTime = tick() + 5;
+		local _dotCount   = 0;
+		local _tipIndex   = 1;
+		local _lastDot    = tick();
+		local _lastTip    = tick();
+		local _endTime    = tick() + 7;
 
 		while tick() < _endTime do
 			task.wait();
 			local now = tick();
 
-			if now - _lastDotTime >= 0.45 then
-				_lastDotTime = now;
-				_dotCount = (_dotCount + 1) % 4;
+			if now - _lastDot >= 0.45 then
+				_lastDot   = now;
+				_dotCount  = (_dotCount + 1) % 4;
 				_LoadText.Text = 'Loading' .. string.rep('.', _dotCount);
 			end;
 
-			if now - _lastTipTime >= 2.5 then
-				_lastTipTime = now;
+			if now - _lastTip >= 2.8 then
+				_lastTip  = now;
 				_tipIndex = (_tipIndex % #_tipsList) + 1;
 				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play();
 				task.wait(0.22);
@@ -256,6 +292,7 @@ do
 		_spinConn:Disconnect();
 		_bgGradConn:Disconnect();
 
+		-- Fade out (transparent → black), then destroy
 		TweenService:Create(_FadeOverlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			BackgroundTransparency = 0;
 		}):Play();
