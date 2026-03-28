@@ -39,7 +39,7 @@ do
 
 	local _LoadGui = Instance.new('ScreenGui');
 	ProtectGui(_LoadGui);
-	_LoadGui.Name           = 'RomazHubLoader';
+	_LoadGui.Name           = 'ScriptLoader';
 	_LoadGui.DisplayOrder   = 200;
 	_LoadGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 	_LoadGui.IgnoreGuiInset = true;
@@ -104,7 +104,7 @@ do
 	_Title.Size                 = UDim2.new(1, -24, 0, 34);
 	_Title.BackgroundTransparency = 1;
 	_Title.Font                 = Enum.Font.Code;
-	_Title.Text                 = 'RomazHub';
+	_Title.Text                 = 'Loading Script';
 	_Title.TextColor3           = Color3.fromRGB(0, 85, 255);
 	_Title.TextSize             = 28;
 	_Title.TextStrokeColor3     = Color3.new(0, 0, 0);
@@ -249,7 +249,7 @@ do
 	_DiscLabel.Size                 = UDim2.new(1, -28, 0, 22);
 	_DiscLabel.BackgroundTransparency = 1;
 	_DiscLabel.Font                 = Enum.Font.Code;
-	_DiscLabel.Text                 = 'discord.gg/romazhub  •  Buy Premium in Discord';
+	_DiscLabel.Text                 = 'discord.gg/GrYZ6DFsjh';
 	_DiscLabel.TextColor3           = Color3.fromRGB(0, 85, 255);
 	_DiscLabel.TextSize             = 11;
 	_DiscLabel.TextWrapped          = true;
