@@ -33,6 +33,237 @@ ProtectGui(ScreenGui);
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 ScreenGui.Parent = CoreGui;
 
+-- ══ Loading Screen ═══════════════════════════════════════════════════════════
+do
+	local _LoadGui = Instance.new('ScreenGui');
+	ProtectGui(_LoadGui);
+	_LoadGui.Name = 'RomazHubLoader';
+	_LoadGui.DisplayOrder = 200;
+	_LoadGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+	_LoadGui.ResetOnSpawn = false;
+	_LoadGui.Parent = CoreGui;
+
+	local _Bg = Instance.new('Frame');
+	_Bg.Size = UDim2.new(1, 0, 1, 0);
+	_Bg.BackgroundColor3 = Color3.fromRGB(14, 14, 16);
+	_Bg.BorderSizePixel = 0;
+	_Bg.ZIndex = 1;
+	_Bg.Parent = _LoadGui;
+
+	local _BgGrad = Instance.new('UIGradient');
+	_BgGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 16, 36));
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 14, 16));
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 12));
+	});
+	_BgGrad.Rotation = 135;
+	_BgGrad.Parent = _Bg;
+
+	local _bgAngle = 135;
+	local _bgGradConn = RunService.Heartbeat:Connect(function(dt)
+		_bgAngle = (_bgAngle + dt * 6) % 360;
+		_BgGrad.Rotation = _bgAngle;
+	end);
+
+	local _FadeOverlay = Instance.new('Frame');
+	_FadeOverlay.Size = UDim2.new(1, 0, 1, 0);
+	_FadeOverlay.BackgroundColor3 = Color3.new(0, 0, 0);
+	_FadeOverlay.BackgroundTransparency = 0;
+	_FadeOverlay.BorderSizePixel = 0;
+	_FadeOverlay.ZIndex = 100;
+	_FadeOverlay.Parent = _LoadGui;
+
+	local _Center = Instance.new('Frame');
+	_Center.AnchorPoint = Vector2.new(0.5, 0.5);
+	_Center.Position = UDim2.new(0.5, 0, 0.5, 0);
+	_Center.Size = UDim2.new(0, 300, 0, 260);
+	_Center.BackgroundTransparency = 1;
+	_Center.ZIndex = 2;
+	_Center.Parent = _Bg;
+
+	local _Title = Instance.new('TextLabel');
+	_Title.AnchorPoint = Vector2.new(0.5, 0);
+	_Title.Position = UDim2.new(0.5, 0, 0, 0);
+	_Title.Size = UDim2.new(1, 0, 0, 42);
+	_Title.BackgroundTransparency = 1;
+	_Title.Font = Enum.Font.Code;
+	_Title.Text = 'RomazHub';
+	_Title.TextColor3 = Color3.fromRGB(0, 85, 255);
+	_Title.TextSize = 34;
+	_Title.TextStrokeColor3 = Color3.new(0, 0, 0);
+	_Title.TextStrokeTransparency = 0.5;
+	_Title.ZIndex = 3;
+	_Title.Parent = _Center;
+
+	local _Sub = Instance.new('TextLabel');
+	_Sub.AnchorPoint = Vector2.new(0.5, 0);
+	_Sub.Position = UDim2.new(0.5, 0, 0, 44);
+	_Sub.Size = UDim2.new(1, 0, 0, 16);
+	_Sub.BackgroundTransparency = 1;
+	_Sub.Font = Enum.Font.Code;
+	_Sub.Text = 'Preparing your experience...';
+	_Sub.TextColor3 = Color3.fromRGB(120, 120, 130);
+	_Sub.TextSize = 13;
+	_Sub.TextStrokeTransparency = 1;
+	_Sub.ZIndex = 3;
+	_Sub.Parent = _Center;
+
+	local _SpinOuter = Instance.new('Frame');
+	_SpinOuter.AnchorPoint = Vector2.new(0.5, 0);
+	_SpinOuter.Position = UDim2.new(0.5, 0, 0, 72);
+	_SpinOuter.Size = UDim2.fromOffset(60, 60);
+	_SpinOuter.BackgroundTransparency = 1;
+	_SpinOuter.BorderSizePixel = 0;
+	_SpinOuter.ZIndex = 3;
+	_SpinOuter.Parent = _Center;
+
+	local _TrackFrame = Instance.new('Frame');
+	_TrackFrame.Size = UDim2.new(1, 0, 1, 0);
+	_TrackFrame.BackgroundTransparency = 1;
+	_TrackFrame.ZIndex = 3;
+	_TrackFrame.Parent = _SpinOuter;
+	local _tc = Instance.new('UICorner');
+	_tc.CornerRadius = UDim.new(0.5, 0);
+	_tc.Parent = _TrackFrame;
+	local _ts = Instance.new('UIStroke');
+	_ts.Color = Color3.fromRGB(38, 38, 44);
+	_ts.Thickness = 4;
+	_ts.Parent = _TrackFrame;
+
+	local _dotDefs = {
+		{size=10, color=Color3.fromRGB(0, 85, 255),  offset=0};
+		{size=7,  color=Color3.fromRGB(0, 60, 190),  offset=-28};
+		{size=5,  color=Color3.fromRGB(0, 40, 130),  offset=-52};
+		{size=3,  color=Color3.fromRGB(0, 25, 80),   offset=-72};
+	};
+	local _spinDots = {};
+	for _, def in ipairs(_dotDefs) do
+		local d = Instance.new('Frame');
+		d.Size = UDim2.fromOffset(def.size, def.size);
+		d.AnchorPoint = Vector2.new(0.5, 0.5);
+		d.BackgroundColor3 = def.color;
+		d.BorderSizePixel = 0;
+		d.ZIndex = 4;
+		d.Parent = _SpinOuter;
+		local dc = Instance.new('UICorner');
+		dc.CornerRadius = UDim.new(0.5, 0);
+		dc.Parent = d;
+		_spinDots[#_spinDots + 1] = {frame = d, offset = def.offset};
+	end;
+
+	local _spinAngle = 0;
+	local _spinRadius = 26;
+	local _spinConn = RunService.Heartbeat:Connect(function(dt)
+		_spinAngle = _spinAngle + dt * 300;
+		for _, dot in ipairs(_spinDots) do
+			local r = math.rad(_spinAngle + dot.offset);
+			dot.frame.Position = UDim2.new(0.5, math.sin(r) * _spinRadius, 0.5, -math.cos(r) * _spinRadius);
+		end;
+	end);
+
+	local _LoadText = Instance.new('TextLabel');
+	_LoadText.AnchorPoint = Vector2.new(0.5, 0);
+	_LoadText.Position = UDim2.new(0.5, 0, 0, 144);
+	_LoadText.Size = UDim2.new(1, 0, 0, 18);
+	_LoadText.BackgroundTransparency = 1;
+	_LoadText.Font = Enum.Font.Code;
+	_LoadText.Text = 'Loading';
+	_LoadText.TextColor3 = Color3.fromRGB(190, 190, 200);
+	_LoadText.TextSize = 14;
+	_LoadText.TextStrokeTransparency = 1;
+	_LoadText.ZIndex = 3;
+	_LoadText.Parent = _Center;
+
+	local _Divider = Instance.new('Frame');
+	_Divider.AnchorPoint = Vector2.new(0.5, 0);
+	_Divider.Position = UDim2.new(0.5, 0, 0, 174);
+	_Divider.Size = UDim2.new(0.65, 0, 0, 1);
+	_Divider.BackgroundColor3 = Color3.fromRGB(45, 45, 52);
+	_Divider.BorderSizePixel = 0;
+	_Divider.ZIndex = 3;
+	_Divider.Parent = _Center;
+
+	local _tipsList = {
+		'Tip: Hold RightShift to toggle the menu open or closed.';
+		'Tip: Drag the toggle button to reposition it anywhere.';
+		'Tip: Use color pickers to customize highlight colors.';
+		'Tip: Sliders support both drag and click-to-set.';
+		'Tip: The watermark shows your live FPS and ping.';
+		'Tip: Save your config to auto-load settings next time.';
+		'Tip: Press RightControl to rebind your toggle key.';
+		'Tip: Most features work across all supported games.';
+	};
+
+	local _TipLabel = Instance.new('TextLabel');
+	_TipLabel.AnchorPoint = Vector2.new(0.5, 0);
+	_TipLabel.Position = UDim2.new(0.5, 0, 0, 186);
+	_TipLabel.Size = UDim2.new(1, -8, 0, 34);
+	_TipLabel.BackgroundTransparency = 1;
+	_TipLabel.Font = Enum.Font.Code;
+	_TipLabel.Text = _tipsList[1];
+	_TipLabel.TextColor3 = Color3.fromRGB(100, 100, 110);
+	_TipLabel.TextSize = 12;
+	_TipLabel.TextWrapped = true;
+	_TipLabel.TextStrokeTransparency = 1;
+	_TipLabel.ZIndex = 3;
+	_TipLabel.Parent = _Center;
+
+	local _DiscLabel = Instance.new('TextLabel');
+	_DiscLabel.AnchorPoint = Vector2.new(0.5, 0);
+	_DiscLabel.Position = UDim2.new(0.5, 0, 0, 228);
+	_DiscLabel.Size = UDim2.new(1, -8, 0, 26);
+	_DiscLabel.BackgroundTransparency = 1;
+	_DiscLabel.Font = Enum.Font.Code;
+	_DiscLabel.Text = 'discord.gg/romazhub  •  Buy Premium in our Discord';
+	_DiscLabel.TextColor3 = Color3.fromRGB(0, 85, 255);
+	_DiscLabel.TextSize = 12;
+	_DiscLabel.TextWrapped = true;
+	_DiscLabel.TextStrokeTransparency = 1;
+	_DiscLabel.ZIndex = 3;
+	_DiscLabel.Parent = _Center;
+
+	TweenService:Create(_FadeOverlay, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 1;
+	}):Play();
+
+	task.spawn(function()
+		local _dotCount = 0;
+		local _tipIndex = 1;
+		local _lastDotTime = tick();
+		local _lastTipTime = tick();
+		local _endTime = tick() + 5;
+
+		while tick() < _endTime do
+			task.wait();
+			local now = tick();
+
+			if now - _lastDotTime >= 0.45 then
+				_lastDotTime = now;
+				_dotCount = (_dotCount + 1) % 4;
+				_LoadText.Text = 'Loading' .. string.rep('.', _dotCount);
+			end;
+
+			if now - _lastTipTime >= 2.5 then
+				_lastTipTime = now;
+				_tipIndex = (_tipIndex % #_tipsList) + 1;
+				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play();
+				task.wait(0.22);
+				_TipLabel.Text = _tipsList[_tipIndex];
+				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 0}):Play();
+			end;
+		end;
+
+		_spinConn:Disconnect();
+		_bgGradConn:Disconnect();
+
+		TweenService:Create(_FadeOverlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			BackgroundTransparency = 0;
+		}):Play();
+		task.wait(0.55);
+		_LoadGui:Destroy();
+	end);
+end;
+-- ═════════════════════════════════════════════════════════════════════════════
 
 local Toggles = {};
 local Options = {};
