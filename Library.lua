@@ -383,10 +383,10 @@ Library._NotifyOrder = 0
 local RainbowStep = 0
 local Hue = 0
 
-table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
+table.insert(Library.Signals, RunService.Heartbeat:Connect(function(Delta)
 	RainbowStep = RainbowStep + Delta
 
-	if RainbowStep >= (1 / 20) then
+	if RainbowStep >= (1 / 15) then
 		RainbowStep = 0
 
 		Hue = Hue + (1 / 400);
@@ -736,17 +736,21 @@ function Library:RemoveFromRegistry(Instance)
 end;
 
 function Library:UpdateColorsUsingRegistry()
-	for Idx, Object in next, Library.Registry do
-		if Object and Object.Instance and Object.Instance.Parent then
-			for Property, ColorIdx in next, Object.Properties do
-				pcall(function()
-					if type(ColorIdx) == 'string' then
-						Object.Instance[Property] = Library[ColorIdx];
-					elseif type(ColorIdx) == 'function' then
-						Object.Instance[Property] = ColorIdx()
+	for Idx = 1, #Library.Registry do
+		local Object = Library.Registry[Idx];
+		if Object then
+			local inst = Object.Instance;
+			if inst and inst.Parent then
+				for Property, ColorIdx in next, Object.Properties do
+					local t = type(ColorIdx);
+					if t == 'string' then
+						inst[Property] = Library[ColorIdx];
+					elseif t == 'function' then
+						local ok, val = pcall(ColorIdx);
+						if ok then inst[Property] = val end;
 					end
-				end)
-			end;
+				end;
+			end
 		end
 	end;
 end;
@@ -775,6 +779,7 @@ function Library:Unload()
 		Library._FadeProxy = nil;
 	end;
 	Library._FadeEntries = nil;
+	Library._FadeEntriesDirty = false;
 	Library._TransparencyCache = {};
 
 	if _touchChangedConn then _touchChangedConn:Disconnect(); _touchChangedConn = nil; end;
@@ -804,8 +809,9 @@ Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
 	if Library._TransparencyCache and Library._TransparencyCache[Instance] then
 		Library._TransparencyCache[Instance] = nil;
 	end;
-	-- Invalidate fade entries so they get rebuilt on next toggle
-	Library._FadeEntries = nil;
+	-- Debounced invalidation: mark dirty instead of clearing every time
+	-- This prevents expensive rebuilds when many instances are removed at once
+	Library._FadeEntriesDirty = true;
 end))
 
 local BaseAddons = {};
@@ -4976,43 +4982,45 @@ end
 	local FpsCount = 0;
 	local CurrentFps = 0;
 
+	local _homeFpsCount = 0;
+	local _homeStatsT = 0;
 	Library:GiveSignal(RunService.Heartbeat:Connect(function(Delta)
+		_homeFpsCount = _homeFpsCount + 1;
+		_homeStatsT = _homeStatsT + Delta;
+		if _homeStatsT < 1 then return end;
+
+		local currentFps = _homeFpsCount;
+		_homeFpsCount = 0;
+		_homeStatsT = 0;
+
 		local Now = tick();
+		local Elapsed = math.floor(Now - StartTime);
+		local Hours   = math.floor(Elapsed / 3600);
+		local Mins    = math.floor((Elapsed % 3600) / 60);
+		local Secs    = Elapsed % 60;
+		local UptimeStr;
 
-		FpsCount = FpsCount + 1;
-		if Now - LastFpsTime >= 1 then
-			CurrentFps = FpsCount;
-			FpsCount = 0;
-			LastFpsTime = Now;
-
-			local Elapsed = math.floor(Now - StartTime);
-			local Hours   = math.floor(Elapsed / 3600);
-			local Mins    = math.floor((Elapsed % 3600) / 60);
-			local Secs    = Elapsed % 60;
-			local UptimeStr;
-
-			if Hours > 0 then
-				UptimeStr = string.format('%dh %dm %ds', Hours, Mins, Secs);
-			elseif Mins > 0 then
-				UptimeStr = string.format('%dm %ds', Mins, Secs);
-			else
-				UptimeStr = Secs .. 's';
-			end;
-
-			pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
-			pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. CurrentFps) end);
-
-			pcall(function()
-				local lp = Players.LocalPlayer;
-				if lp and typeof(lp.GetNetworkPing) == 'function' then
-					PingLabel:SetText('📶  Ping:  ' .. math.floor(lp:GetNetworkPing() * 1000) .. 'ms');
-				end;
-			end);
-
-			pcall(function()
-				ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
-			end);
+		if Hours > 0 then
+			UptimeStr = string.format('%dh %dm %ds', Hours, Mins, Secs);
+		elseif Mins > 0 then
+			UptimeStr = string.format('%dm %ds', Mins, Secs);
+		else
+			UptimeStr = Secs .. 's';
 		end;
+
+		pcall(function() UptimeLabel:SetText('⏱  Uptime:  ' .. UptimeStr) end);
+		pcall(function() FpsLabel:SetText('🖥  FPS:  ' .. currentFps) end);
+
+		pcall(function()
+			local lp = Players.LocalPlayer;
+			if lp and typeof(lp.GetNetworkPing) == 'function' then
+				PingLabel:SetText('📶  Ping:  ' .. math.floor(lp:GetNetworkPing() * 1000) .. 'ms');
+			end;
+		end);
+
+		pcall(function()
+			ServerLabel:SetText('👥  Players:  ' .. #Players:GetPlayers() .. ' / ' .. Players.MaxPlayers);
+		end);
 
 		if Now - LastTipSwap >= 8 then
 			LastTipSwap = Now;
@@ -6211,6 +6219,11 @@ function Library:Toggle()
 
 		-- ── Optimized fade: single proxy tween drives ALL transparencies ──
 		-- Build cache once on first toggle; reuse on subsequent toggles.
+		-- Rebuild only when marked dirty (descendant removed), not every toggle
+		if Library._FadeEntriesDirty then
+			Library._FadeEntries = nil;
+			Library._FadeEntriesDirty = false;
+		end;
 		if not Library._FadeEntries then
 			Library._FadeEntries = {};
 			for _, Desc in next, Outer:GetDescendants() do
