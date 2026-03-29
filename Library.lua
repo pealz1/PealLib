@@ -5323,6 +5323,245 @@ function Library:Notify(InfoOrText, Time)
 	end)
 end;
 
+--[[
+Library:CreateAlert(Info)
+  Info.Title   -- string: header title (shown in red-tinted header bar)
+  Info.Text    -- string: main body text (auto-wraps)
+  Info.Detail  -- string: amber secondary line below body (optional)
+  Info.Buttons -- array of { Text, Func, [Color = Color3] }
+  Info.Width   -- number: pixel width (default 420)
+  Returns { Dismiss = fn }  —  call to close the alert programmatically
+--]]
+function Library:CreateAlert(Info)
+	Info = Info or {}
+	local title   = tostring(Info.Title  or 'Alert')
+	local text    = tostring(Info.Text   or '')
+	local detail  = tostring(Info.Detail or '')
+	local buttons = type(Info.Buttons) == 'table' and Info.Buttons or {}
+	local width   = type(Info.Width) == 'number' and Info.Width or 420
+
+	-- Dedicated ScreenGui so it floats above all other UI
+	local alertGui = Instance.new('ScreenGui')
+	alertGui.Name           = 'PealLibAlert'
+	alertGui.ResetOnSpawn   = false
+	alertGui.DisplayOrder   = 9999
+	alertGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pcall(ProtectGui, alertGui)
+	alertGui.Parent = CoreGui
+
+	-- ── measure content heights ────────────────────────────────────────────
+	local padL  = 12
+	local textW = width - 2 - padL * 2
+	local _, tH = Library:GetTextBounds(text ~= '' and text or ' ', Library.Font, 14, Vector2.new(textW, 999))
+	local textH = math.max(tH, 14)
+
+	local detailH = 0
+	if detail ~= '' then
+		local _, dH = Library:GetTextBounds(detail, Library.Font, 13, Vector2.new(textW, 999))
+		detailH = math.max(dH, 13)
+	end
+
+	-- Layout: 2px accent + 36px header + 8px gap + body + [detail+6] + 6px + 1px divider + 8px + [buttons+8]
+	local bodyY  = 46
+	local divY   = bodyY + textH + (detailH > 0 and detailH + 12 or 6)
+	local btnY   = divY + 1 + 8
+	local totalH = btnY + (#buttons > 0 and 36 or 0) + 8
+
+	-- ── outer frame (OutlineColor bg = 1px border) ─────────────────────────
+	local Outer = Library:Create('Frame', {
+		AnchorPoint      = Vector2.new(0.5, 0.5);
+		Position         = UDim2.fromScale(0.5, 0.42);
+		Size             = UDim2.fromOffset(width, 0);
+		BackgroundColor3 = Library.OutlineColor;
+		BorderSizePixel  = 0;
+		ClipsDescendants = true;
+		Parent           = alertGui;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = Outer })
+	Library:AddToRegistry(Outer, { BackgroundColor3 = 'OutlineColor' })
+
+	-- ── inner panel ────────────────────────────────────────────────────────
+	local Inner = Library:Create('Frame', {
+		BackgroundColor3 = Library.MainColor;
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 1, 0, 1);
+		Size             = UDim2.new(1, -2, 1, -2);
+		Parent           = Outer;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 7); Parent = Inner })
+	Library:AddToRegistry(Inner, { BackgroundColor3 = 'MainColor' })
+
+	-- 2px RiskColor accent line at the very top
+	local TopAccent = Library:Create('Frame', {
+		BackgroundColor3 = Library.RiskColor;
+		BorderSizePixel  = 0;
+		Size             = UDim2.new(1, 0, 0, 2);
+		Parent           = Inner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 7); Parent = TopAccent })
+	Library:AddToRegistry(TopAccent, { BackgroundColor3 = 'RiskColor' })
+
+	-- Header bar (semi-transparent RiskColor tint, square bottom via overlap)
+	local Header = Library:Create('Frame', {
+		BackgroundColor3       = Library.RiskColor;
+		BackgroundTransparency = 0.6;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0, 0, 0, 2);
+		Size                   = UDim2.new(1, 0, 0, 36);
+		Parent                 = Inner;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 7); Parent = Header })
+	Library:Create('Frame', {
+		BackgroundColor3       = Library.RiskColor;
+		BackgroundTransparency = 0.6;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0, 0, 0.5, 0);
+		Size                   = UDim2.new(1, 0, 0.5, 0);
+		Parent                 = Header;
+	})
+
+	Library:CreateLabel({
+		Position       = UDim2.new(0, padL, 0, 0);
+		Size           = UDim2.new(1, -50, 1, 0);
+		Text           = title;
+		TextSize       = 15;
+		Font           = Enum.Font.GothamBold;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		Parent         = Header;
+	})
+
+	local CloseBtn = Library:Create('TextButton', {
+		AnchorPoint      = Vector2.new(1, 0.5);
+		Position         = UDim2.new(1, -7, 0.5, 0);
+		Size             = UDim2.fromOffset(26, 24);
+		BackgroundColor3 = Color3.fromRGB(160, 35, 35);
+		BorderSizePixel  = 0;
+		Text             = '×';
+		TextColor3       = Color3.new(1, 1, 1);
+		TextSize         = 18;
+		Font             = Enum.Font.GothamBold;
+		Parent           = Header;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = CloseBtn })
+
+	-- ── body text ──────────────────────────────────────────────────────────
+	Library:CreateLabel({
+		Position       = UDim2.new(0, padL, 0, bodyY);
+		Size           = UDim2.new(1, -padL * 2, 0, textH);
+		Text           = text;
+		TextSize       = 14;
+		TextWrapped    = true;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		Parent         = Inner;
+	})
+
+	-- ── detail text (amber) ────────────────────────────────────────────────
+	if detailH > 0 then
+		Library:Create('TextLabel', {
+			BackgroundTransparency = 1;
+			Position       = UDim2.new(0, padL, 0, bodyY + textH + 6);
+			Size           = UDim2.new(1, -padL * 2, 0, detailH);
+			Text           = detail;
+			TextColor3     = Color3.fromRGB(255, 178, 50);
+			Font           = Library.Font;
+			TextSize       = 13;
+			TextWrapped    = true;
+			TextXAlignment = Enum.TextXAlignment.Left;
+			Parent         = Inner;
+		})
+	end
+
+	-- ── divider ────────────────────────────────────────────────────────────
+	local Divider = Library:Create('Frame', {
+		BackgroundColor3 = Library.OutlineColor;
+		BorderSizePixel  = 0;
+		Position         = UDim2.new(0, 8, 0, divY);
+		Size             = UDim2.new(1, -16, 0, 1);
+		Parent           = Inner;
+	})
+	Library:AddToRegistry(Divider, { BackgroundColor3 = 'OutlineColor' })
+
+	-- ── dismiss helper ─────────────────────────────────────────────────────
+	local dismissed = false
+	local function dismiss()
+		if dismissed then return end
+		dismissed = true
+		TweenService:Create(Outer,
+			TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ Size = UDim2.fromOffset(width, 0) }
+		):Play()
+		task.delay(0.22, function() pcall(function() alertGui:Destroy() end) end)
+	end
+
+	-- ── buttons ────────────────────────────────────────────────────────────
+	if #buttons > 0 then
+		local innerW  = width - 2 - padL * 2
+		local nBtns   = #buttons
+		local btnW    = math.floor((innerW - (nBtns - 1) * 6) / nBtns)
+
+		for i, BtnInfo in ipairs(buttons) do
+			local xOff   = padL + (i - 1) * (btnW + 6)
+			local bColor = type(BtnInfo.Color) == 'userdata' and BtnInfo.Color or Library.OutlineColor
+
+			local BtnOuter = Library:Create('Frame', {
+				BackgroundColor3 = bColor;
+				BorderSizePixel  = 0;
+				Position         = UDim2.new(0, xOff, 0, btnY);
+				Size             = UDim2.fromOffset(btnW, 36);
+				Parent           = Inner;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = BtnOuter })
+
+			local BtnInner = Library:Create('Frame', {
+				BackgroundColor3 = Library.MainColor;
+				BorderSizePixel  = 0;
+				Position         = UDim2.new(0, 1, 0, 1);
+				Size             = UDim2.new(1, -2, 1, -2);
+				Parent           = BtnOuter;
+			})
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = BtnInner })
+			Library:AddToRegistry(BtnInner, { BackgroundColor3 = 'MainColor' })
+
+			Library:Create('Frame', {
+				BackgroundColor3 = bColor;
+				BorderSizePixel  = 0;
+				Size             = UDim2.new(1, 0, 0, 2);
+				Parent           = BtnInner;
+			})
+
+			Library:CreateLabel({
+				Size           = UDim2.new(1, 0, 1, 0);
+				TextSize       = 13;
+				Font           = Enum.Font.GothamBold;
+				Text           = tostring(BtnInfo.Text or '');
+				TextXAlignment = Enum.TextXAlignment.Center;
+				Parent         = BtnInner;
+			})
+
+			BtnOuter.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+					if BtnInfo.Func then pcall(BtnInfo.Func) end
+					dismiss()
+				end
+			end)
+		end
+	end
+
+	CloseBtn.MouseButton1Click:Connect(dismiss)
+	Library:MakeDraggable(Outer, 40)
+
+	-- Slide-in entrance; ClipsDescendants keeps inner content hidden until frame opens
+	TweenService:Create(Outer, Library._TI_Bounce, {
+		Size = UDim2.fromOffset(width, totalH + 2)
+	}):Play()
+	task.delay(0.3, function()
+		if Outer and Outer.Parent then Outer.ClipsDescendants = false end
+	end)
+
+	return { Dismiss = dismiss }
+end;
+
 function Library:CreateWindow(...)
 	local Arguments = { ... }
 	local Config = { AnchorPoint = Vector2.zero }
