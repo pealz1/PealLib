@@ -5812,12 +5812,13 @@ end);
 local TabArea = Library:Create('ScrollingFrame', {
 	BackgroundTransparency = 1;
 	Position = UDim2.new(0, 8, 0, 8);
-	Size = UDim2.new(1, -16, 0, 21);
+	Size = UDim2.new(1, -16, 0, 24);
 	ZIndex = 1;
 	CanvasSize = UDim2.new(0, 0, 0, 0);
 	AutomaticCanvasSize = Enum.AutomaticSize.None;
 	ScrollingDirection = Enum.ScrollingDirection.X;
-	ScrollBarThickness = 0;
+	ScrollBarThickness = 3;
+	ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80);
 	Parent = MainSectionInner;
 });
 
@@ -5837,8 +5838,8 @@ end);
 	local TabContainer = Library:Create('Frame', {
 		BackgroundColor3 = Library.MainColor;
 		BorderSizePixel  = 0;
-		Position         = UDim2.new(0, 8, 0, 30);
-		Size             = UDim2.new(1, -16, 1, -38);
+		Position         = UDim2.new(0, 8, 0, 33);
+		Size             = UDim2.new(1, -16, 1, -41);
 		ZIndex           = 2;
 		Parent           = MainSectionInner;
 	});
