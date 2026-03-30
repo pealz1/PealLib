@@ -5918,12 +5918,8 @@ TabButton.MouseEnter:Connect(function()
 		end);
 
 		TabButton.TouchTap:Connect(function()
-			if Blocker.BackgroundTransparency == 0 then return end;
-			Library:PlayHoverSound();
-			TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.AccentColor }):Play();
-			task.delay(0.2, function()
-				TweenService:Create(TabButtonLabel, tabTween, { TextColor3 = Library.FontColor }):Play();
-			end);
+			Library:PlayClickSound();
+			Tab:ShowTab();
 		end);
 
 		local TabFrame = Library:Create('ScrollingFrame', {
