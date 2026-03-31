@@ -7119,6 +7119,7 @@ function Library:CreateModal(opts)
 		if self._destroyed then return end
 		self._visible = true
 		gui.Enabled = true
+		-- Cancel any in-progress hide tweens by immediately resetting
 		backdrop.BackgroundTransparency = 1
 		card.Size = UDim2.fromOffset(cardW * 0.9, (cardH + titleH + btnH) * 0.9)
 
