@@ -4242,8 +4242,10 @@ end
 	end;
 
 	-- ── Popout toggle button (draggable, matches main toggle button style) ─
-	function Popout:CreateToggleButton(Text)
+	function Popout:CreateToggleButton(Text, Config)
+		Config = Config or {};
 		Text = Text or PTitle;
+		local IconChar = Config.Icon or '🌐';
 
 		local BtnOuter = Library:Create('Frame', {
 			Active           = true;
@@ -4294,7 +4296,7 @@ local BtnIcon = Library:Create('TextLabel', {
     Position  = UDim2.new(0, 6, 0, 0);
     Size      = UDim2.new(0, 16, 1, 0);
     Font      = Enum.Font.GothamBold;
-    Text      = '🌐';
+    Text      = IconChar;
     TextColor3 = Library.AccentColor;
     TextSize  = 12;
     ZIndex    = 303;
