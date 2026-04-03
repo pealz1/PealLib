@@ -6419,39 +6419,67 @@ function Library:Toggle()
 
 			task.spawn(function()
 				local State = InputService.MouseIconEnabled;
+				local Cursor, CursorOutline;
+				local UseCustomCursor = false;
 
-				local Cursor = Drawing.new('Triangle');
-				Cursor.Thickness = 1;
-				Cursor.Filled = true;
-				Cursor.Visible = true;
+				local ok = pcall(function()
+					if type(Drawing) ~= 'table' or type(Drawing.new) ~= 'function' then
+						return;
+					end;
 
-				local CursorOutline = Drawing.new('Triangle');
-				CursorOutline.Thickness = 1;
-				CursorOutline.Filled = false;
-				CursorOutline.Color = Color3.new(0, 0, 0);
-				CursorOutline.Visible = true;
+					Cursor = Drawing.new('Triangle');
+					Cursor.Thickness = 1;
+					Cursor.Filled = true;
+					Cursor.Visible = true;
 
-				while Toggled and ScreenGui.Parent do
-					InputService.MouseIconEnabled = false;
+					CursorOutline = Drawing.new('Triangle');
+					CursorOutline.Thickness = 1;
+					CursorOutline.Filled = false;
+					CursorOutline.Color = Color3.new(0, 0, 0);
+					CursorOutline.Visible = true;
 
-					Cursor.Color = Library.AccentColor;
+					UseCustomCursor = true;
+				end);
 
-					local mx, my = Library:GetMousePosition();
-					Cursor.PointA = Vector2.new(mx, my);
-					Cursor.PointB = Vector2.new(mx + 16, my + 6);
-					Cursor.PointC = Vector2.new(mx + 6, my + 16);
+				if ok and UseCustomCursor then
+					pcall(function()
+						while Toggled and ScreenGui.Parent do
+							InputService.MouseIconEnabled = false;
 
-					CursorOutline.PointA = Cursor.PointA;
-					CursorOutline.PointB = Cursor.PointB;
-					CursorOutline.PointC = Cursor.PointC;
+							Cursor.Color = Library.AccentColor;
 
-					RenderStepped:Wait();
+							local mx, my = Library:GetMousePosition();
+							Cursor.PointA = Vector2.new(mx, my);
+							Cursor.PointB = Vector2.new(mx + 16, my + 6);
+							Cursor.PointC = Vector2.new(mx + 6, my + 16);
+
+							CursorOutline.PointA = Cursor.PointA;
+							CursorOutline.PointB = Cursor.PointB;
+							CursorOutline.PointC = Cursor.PointC;
+
+							RenderStepped:Wait();
+						end;
+					end);
+				else
+					while Toggled and ScreenGui.Parent do
+						InputService.MouseIconEnabled = State;
+						RenderStepped:Wait();
+					end;
 				end;
 
 				InputService.MouseIconEnabled = State;
 
-				Cursor:Remove();
-				CursorOutline:Remove();
+				if Cursor then
+					pcall(function()
+						Cursor:Remove();
+					end);
+				end;
+
+				if CursorOutline then
+					pcall(function()
+						CursorOutline:Remove();
+					end);
+				end;
 			end);
 		end;
 
