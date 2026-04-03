@@ -5631,6 +5631,10 @@ function Library:CreateWindow(...)
 		Parent           = ScreenGui;
 	});
 
+	local WindowScale = Instance.new('UIScale');
+	WindowScale.Scale = 1;
+	WindowScale.Parent = Outer;
+
 	Library:Create('UICorner', {
 		CornerRadius = UDim.new(0, 6);
 		Parent       = Outer;
@@ -5848,8 +5852,9 @@ local TabArea = Library:Create('ScrollingFrame', {
 	CanvasSize = UDim2.new(0, 0, 0, 0);
 	AutomaticCanvasSize = Enum.AutomaticSize.None;
 	ScrollingDirection = Enum.ScrollingDirection.X;
-	ScrollBarThickness = 3;
+	ScrollBarThickness = 0;
 	ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80);
+	ScrollBarImageTransparency = 1;
 	Parent = MainSectionInner;
 });
 
@@ -6619,6 +6624,11 @@ function Library:Toggle()
 	-- ── Store TabContainer on Window so CreateHomeTab can access it ───────
 	Window.TabContainer = TabContainer;
 	Window.Holder = Outer;
+	Window.ScaleObject = WindowScale;
+
+	function Window:SetScale(scale)
+		WindowScale.Scale = math.clamp(tonumber(scale) or 1, 0.5, 2);
+	end
 
 	return Window;
 end;
@@ -7261,59 +7271,184 @@ end
 
 function Library:CreateLockOverlay(element, opts)
 	opts = opts or {}
-	local lockObj = { _locked = true; _element = element }
+	local accent = opts.AccentColor or Color3.fromRGB(255, 191, 76)
+	local lockObj = {
+		_locked = true;
+		_element = element;
+		_destroyed = false;
+	}
 
-	-- Overlay frame covering the element
-	local overlay = Library:Create('Frame', {
-		BackgroundColor3       = Color3.new(0, 0, 0);
-		BackgroundTransparency = 0.55;
+	local overlay = Library:Create('TextButton', {
+		AutoButtonColor        = false;
+		BackgroundTransparency = 1;
 		BorderSizePixel        = 0;
 		Size                   = UDim2.new(1, 0, 1, 0);
+		Text                   = '';
 		ZIndex                 = element.ZIndex + 10;
-		Active                 = true;
 		Parent                 = element;
 	})
-	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = overlay })
 
-	-- Lock icon
-	local lockIcon = Library:Create('TextLabel', {
-		BackgroundTransparency = 1;
+	local shade = Library:Create('Frame', {
+		BackgroundColor3       = Color3.fromRGB(7, 10, 18);
+		BackgroundTransparency = 0.18;
+		BorderSizePixel        = 0;
+		Size                   = UDim2.new(1, 0, 1, 0);
+		ZIndex                 = overlay.ZIndex;
+		Parent                 = overlay;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = shade })
+
+	local shimmer = Library:Create('Frame', {
 		AnchorPoint            = Vector2.new(0.5, 0.5);
+		BackgroundColor3       = accent;
+		BackgroundTransparency = 0.92;
+		BorderSizePixel        = 0;
 		Position               = UDim2.new(0.5, 0, 0.5, 0);
-		Size                   = UDim2.fromOffset(28, 28);
+		Rotation               = 16;
+		Size                   = UDim2.new(0, 34, 1.4, 0);
+		ZIndex                 = overlay.ZIndex + 1;
+		Parent                 = shade;
+	})
+
+	local badgeGlow = Library:Create('Frame', {
+		AnchorPoint            = Vector2.new(0.5, 0.5);
+		BackgroundColor3       = accent;
+		BackgroundTransparency = 0.82;
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0.5, 0, 0.5, 0);
+		Size                   = UDim2.fromOffset(110, 34);
+		ZIndex                 = overlay.ZIndex + 2;
+		Parent                 = overlay;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 999); Parent = badgeGlow })
+
+	local badge = Library:Create('Frame', {
+		AnchorPoint            = Vector2.new(0.5, 0.5);
+		BackgroundColor3       = Color3.fromRGB(18, 23, 37);
+		BorderSizePixel        = 0;
+		Position               = UDim2.new(0.5, 0, 0.5, 0);
+		Size                   = UDim2.fromOffset(106, 30);
+		ZIndex                 = overlay.ZIndex + 3;
+		Parent                 = overlay;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 999); Parent = badge })
+
+	local badgeStroke = Library:Create('UIStroke', {
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+		Color           = accent;
+		Thickness       = 1.35;
+		Transparency    = 0.28;
+		Parent          = badge;
+	})
+
+	local badgeScale = Instance.new('UIScale')
+	badgeScale.Scale = 1
+	badgeScale.Parent = badge
+
+	local titleLabel = Library:Create('TextLabel', {
+		BackgroundTransparency = 1;
+		Position               = UDim2.new(0, 10, 0, 3);
+		Size                   = UDim2.new(1, -20, 0, 12);
 		Font                   = Enum.Font.GothamBold;
-		Text                   = '\u{1F512}';
-		TextColor3             = Color3.fromRGB(255, 200, 50);
-		TextSize               = 18;
-		ZIndex                 = element.ZIndex + 11;
+		Text                   = opts.TitleText or 'PREMIUM';
+		TextColor3             = accent;
+		TextSize               = 12;
+		TextXAlignment         = Enum.TextXAlignment.Center;
+		ZIndex                 = overlay.ZIndex + 4;
+		Parent                 = badge;
+	})
+
+	local subtitleLabel = Library:Create('TextLabel', {
+		BackgroundTransparency = 1;
+		AnchorPoint            = Vector2.new(0.5, 1);
+		Position               = UDim2.new(0.5, 0, 1, -4);
+		Size                   = UDim2.new(1, -16, 0, 10);
+		Font                   = Enum.Font.Gotham;
+		Text                   = opts.SubtitleText or 'Locked';
+		TextColor3             = Color3.fromRGB(224, 229, 240);
+		TextSize               = 9;
+		TextXAlignment         = Enum.TextXAlignment.Center;
+		ZIndex                 = overlay.ZIndex + 4;
+		Parent                 = badge;
+	})
+
+	local helperLabel = Library:Create('TextLabel', {
+		BackgroundTransparency = 1;
+		AnchorPoint            = Vector2.new(0.5, 1);
+		Position               = UDim2.new(0.5, 0, 1, -2);
+		Size                   = UDim2.new(1, -10, 0, 10);
+		Font                   = Enum.Font.Gotham;
+		Text                   = opts.HelperText or 'Tap to unlock';
+		TextColor3             = Color3.fromRGB(200, 205, 218);
+		TextSize               = 9;
+		TextTransparency       = 0.2;
+		TextXAlignment         = Enum.TextXAlignment.Center;
+		ZIndex                 = overlay.ZIndex + 2;
 		Parent                 = overlay;
 	})
 
-	-- Subtle "PREMIUM" text below lock on larger elements
-	local elSize = element.AbsoluteSize
-	local premLabel
-	if elSize.Y > 40 or elSize.X > 120 then
-		premLabel = Library:Create('TextLabel', {
-			BackgroundTransparency = 1;
-			AnchorPoint            = Vector2.new(0.5, 0);
-			Position               = UDim2.new(0.5, 0, 0.5, 12);
-			Size                   = UDim2.new(0.9, 0, 0, 14);
-			Font                   = Enum.Font.GothamBold;
-			Text                   = 'PREMIUM';
-			TextColor3             = Color3.fromRGB(255, 200, 50);
-			TextSize               = 10;
-			ZIndex                 = element.ZIndex + 11;
-			Parent                 = overlay;
-		})
+	local sizeConn
+	local function refreshLayout()
+		local size = element.AbsoluteSize
+		local compact = size.Y <= 26 or size.X <= 135
+		local badgeWidth = compact and math.max(62, math.min(size.X - 6, 110)) or math.max(88, math.min(size.X - 12, 150))
+		local badgeHeight = compact and math.max(18, math.min(size.Y - 4, 22)) or math.max(30, math.min(size.Y - 8, 40))
+
+		badge.Size = UDim2.fromOffset(badgeWidth, badgeHeight)
+		badgeGlow.Size = UDim2.fromOffset(badgeWidth + 10, badgeHeight + 8)
+		shimmer.Size = UDim2.new(0, math.max(28, math.floor(badgeWidth * 0.28)), 1.4, 0)
+
+		titleLabel.Position = compact and UDim2.new(0, 8, 0, 0) or UDim2.new(0, 10, 0, 3)
+		titleLabel.Size = compact and UDim2.new(1, -16, 1, 0) or UDim2.new(1, -20, 0, 12)
+		titleLabel.TextSize = compact and 10 or 12
+		titleLabel.Text = compact and (opts.CompactText or 'PREMIUM') or (opts.TitleText or 'PREMIUM')
+
+		subtitleLabel.Visible = not compact
+		helperLabel.Visible = not compact and size.X >= 150 and size.Y >= 34
 	end
 
-	-- Intercept click/tap
-	overlay.InputBegan:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1
-		or inp.UserInputType == Enum.UserInputType.Touch then
-			if lockObj._locked and opts.OnLocked then
-				task.spawn(opts.OnLocked)
+	refreshLayout()
+	sizeConn = element:GetPropertyChangedSignal('AbsoluteSize'):Connect(refreshLayout)
+
+	task.spawn(function()
+		while not lockObj._destroyed and overlay.Parent do
+			if overlay.Visible then
+				TweenService:Create(badgeGlow, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					BackgroundTransparency = 0.7
+				}):Play()
+				TweenService:Create(badgeScale, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					Scale = 1.035
+				}):Play()
+				TweenService:Create(badgeStroke, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					Transparency = 0.08
+				}):Play()
+				TweenService:Create(shimmer, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					BackgroundTransparency = 0.84
+				}):Play()
+				task.wait(1.05)
+
+				TweenService:Create(badgeGlow, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					BackgroundTransparency = 0.82
+				}):Play()
+				TweenService:Create(badgeScale, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					Scale = 1
+				}):Play()
+				TweenService:Create(badgeStroke, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					Transparency = 0.28
+				}):Play()
+				TweenService:Create(shimmer, TweenInfo.new(1.05, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+					BackgroundTransparency = 0.92
+				}):Play()
+				task.wait(1.05)
+			else
+				task.wait(0.2)
 			end
+		end
+	end)
+
+	overlay.Activated:Connect(function()
+		if lockObj._locked and opts.OnLocked then
+			task.spawn(opts.OnLocked)
 		end
 	end)
 
@@ -7321,16 +7456,28 @@ function Library:CreateLockOverlay(element, opts)
 
 	function lockObj:Unlock()
 		self._locked = false
+		overlay.Active = false
 		overlay.Visible = false
 	end
 
 	function lockObj:Lock()
 		self._locked = true
+		overlay.Active = true
 		overlay.Visible = true
+		refreshLayout()
 	end
 
 	function lockObj:Destroy()
+		self._destroyed = true
+		if sizeConn then
+			sizeConn:Disconnect()
+			sizeConn = nil
+		end
 		pcall(function() overlay:Destroy() end)
+	end
+
+	if opts.InitiallyUnlocked then
+		lockObj:Unlock()
 	end
 
 	return lockObj
