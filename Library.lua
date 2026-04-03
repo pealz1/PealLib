@@ -30,6 +30,8 @@ local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
 
+ScreenGui.Name = 'PealLibMain';
+ScreenGui.ResetOnSpawn = false;
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 ScreenGui.Parent = CoreGui;
 
@@ -329,6 +331,8 @@ local Library = {
 
 	Signals = {};
 	ScreenGui = ScreenGui;
+	UseCustomCursor = false;
+	_ManagedGuis = { ScreenGui };
 };
 
 Library._lastTabHoverSoundTime = 0;
@@ -760,11 +764,21 @@ function Library:GiveSignal(Signal)
 end
 
 function Library:Unload()
+	if Library._Unloading then
+		return
+	end
+
+	Library._Unloading = true;
 	Library.Unloaded = true;
+	pcall(function()
+		InputService.MouseIconEnabled = true;
+	end)
 
 	for Idx = #Library.Signals, 1, -1 do
 		local Connection = table.remove(Library.Signals, Idx)
-		Connection:Disconnect()
+		pcall(function()
+			Connection:Disconnect()
+		end)
 	end
 
 	-- Clean up pooled sounds
@@ -790,11 +804,25 @@ function Library:Unload()
 	table.clear(Library.RegistryMap);
 	table.clear(Library.HudRegistry);
 
-	if Library.OnUnload then
-		Library.OnUnload()
+	local unloadCallback = Library.OnUnload
+	Library.OnUnload = nil
+	if unloadCallback then
+		local ok, err = pcall(unloadCallback)
+		if not ok then
+			warn('[PealLib] OnUnload error: ' .. tostring(err))
+		end
 	end
 
-	ScreenGui:Destroy()
+	for Idx = #Library._ManagedGuis, 1, -1 do
+		local Gui = table.remove(Library._ManagedGuis, Idx)
+		pcall(function()
+			if Gui and Gui.Parent then
+				Gui:Destroy()
+			end
+		end)
+	end
+
+	Library._Unloading = false;
 end
 
 function Library:OnUnload(Callback)
@@ -5350,6 +5378,7 @@ function Library:CreateAlert(Info)
 	alertGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	pcall(ProtectGui, alertGui)
 	alertGui.Parent = CoreGui
+	table.insert(Library._ManagedGuis, alertGui)
 
 	-- ── measure content heights ────────────────────────────────────────────
 	local padL  = 12
@@ -6420,26 +6449,30 @@ function Library:Toggle()
 			task.spawn(function()
 				local State = InputService.MouseIconEnabled;
 				local Cursor, CursorOutline;
-				local UseCustomCursor = false;
+				local UseCustomCursor = Library.UseCustomCursor == true;
 
-				local ok = pcall(function()
-					if type(Drawing) ~= 'table' or type(Drawing.new) ~= 'function' then
-						return;
-					end;
+				local ok = true;
+				if UseCustomCursor then
+					ok = pcall(function()
+						if type(Drawing) ~= 'table' or type(Drawing.new) ~= 'function' then
+							UseCustomCursor = false;
+							return;
+						end;
 
-					Cursor = Drawing.new('Triangle');
-					Cursor.Thickness = 1;
-					Cursor.Filled = true;
-					Cursor.Visible = true;
+						Cursor = Drawing.new('Triangle');
+						Cursor.Thickness = 1;
+						Cursor.Filled = true;
+						Cursor.Visible = true;
 
-					CursorOutline = Drawing.new('Triangle');
-					CursorOutline.Thickness = 1;
-					CursorOutline.Filled = false;
-					CursorOutline.Color = Color3.new(0, 0, 0);
-					CursorOutline.Visible = true;
+						CursorOutline = Drawing.new('Triangle');
+						CursorOutline.Thickness = 1;
+						CursorOutline.Filled = false;
+						CursorOutline.Color = Color3.new(0, 0, 0);
+						CursorOutline.Visible = true;
 
-					UseCustomCursor = true;
-				end);
+						UseCustomCursor = true;
+					end);
+				end
 
 				if ok and UseCustomCursor then
 					pcall(function()
@@ -6462,7 +6495,7 @@ function Library:Toggle()
 					end);
 				else
 					while Toggled and ScreenGui.Parent do
-						InputService.MouseIconEnabled = State;
+						InputService.MouseIconEnabled = true;
 						RenderStepped:Wait();
 					end;
 				end;
@@ -6611,6 +6644,7 @@ function Library:CreateToolPanel(config)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     gui.Enabled = false
     gui.Parent = CoreGui
+    table.insert(Library._ManagedGuis, gui)
 
     local panelOuter = Library:Create('Frame', {
         AnchorPoint      = config.anchor or Vector2.new(0.5, 0);
@@ -6917,6 +6951,7 @@ function Library:CreateModal(opts)
 	gui.ResetOnSpawn    = false
 	gui.Enabled         = false
 	gui.Parent          = CoreGui
+	table.insert(Library._ManagedGuis, gui)
 
 	-- Backdrop
 	local backdrop = Library:Create('Frame', {
