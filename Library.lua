@@ -1,3 +1,4 @@
+-- soskoify was too lazy to format some stuff so expect bad formatting.
 local InputService = game:GetService('UserInputService');
 local TextService = game:GetService('TextService');
 local CoreGui = game:GetService('CoreGui');
@@ -4766,29 +4767,23 @@ function Library:CreateHomeTab(Window, Info)
 	});
 
 	-- Replicate the two-column layout identical to a normal AddTab
-	local LeftSide = Library:Create('ScrollingFrame', {
-		BackgroundTransparency = 1;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
-		Size     = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
-		CanvasSize = UDim2.new(0, 0, 0, 0);
-		BottomImage = ''; TopImage = '';
-		ScrollBarThickness = 0;
-		ZIndex = 2;
-		Parent = HomeFrame;
-	});
+	local LeftSide = Library:Create('Frame', {
+    BackgroundTransparency = 1;
+    BorderSizePixel = 0;
+    Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
+    Size = UDim2.new(0.5, -12 + 2, 1, -16);
+    ZIndex = 2;
+    Parent = TabFrame;
+});
 
-	local RightSide = Library:Create('ScrollingFrame', {
-		BackgroundTransparency = 1;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
-		Size     = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
-		CanvasSize = UDim2.new(0, 0, 0, 0);
-		BottomImage = ''; TopImage = '';
-		ScrollBarThickness = 0;
-		ZIndex = 2;
-		Parent = HomeFrame;
-	});
+local RightSide = Library:Create('Frame', {
+    BackgroundTransparency = 1;
+    BorderSizePixel = 0;
+    Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
+    Size = UDim2.new(0.5, -12 + 2, 1, -16);
+    ZIndex = 2;
+    Parent = TabFrame;
+});
 
 	Library:Create('UIListLayout', {
 		Padding = UDim.new(0, 8);
@@ -5851,7 +5846,7 @@ end);
 local TabArea = Library:Create('ScrollingFrame', {
 	BackgroundTransparency = 1;
 	Position = UDim2.new(0, 8, 0, 8);
-	Size = UDim2.new(1, -16, 0, 24);
+	Size = UDim2.new(1, -16, 0, 28);
 	ZIndex = 1;
 	CanvasSize = UDim2.new(0, 0, 0, 0);
 	AutomaticCanvasSize = Enum.AutomaticSize.None;
@@ -5969,8 +5964,8 @@ TabButton.MouseEnter:Connect(function()
 			Size = UDim2.new(1, 0, 1, 0);
 			Visible = false;
 			ZIndex = 2;
-			CanvasSize = UDim2.new(0,0,0,0);
-			AutomaticCanvasSize = Enum.AutomaticSize.Y;
+			CanvasSize = UDim2.new(0,0,5,0);
+			AutomaticCanvasSize = Enum.AutomaticSize.None;
 			ScrollingDirection = Enum.ScrollingDirection.Y;
 			ScrollBarThickness = 0;
 			Parent = TabContainer;
