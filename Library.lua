@@ -681,7 +681,8 @@ function Library:UpdateDependencyBoxes()
 end;
 
 function Library:MapValue(Value, MinA, MaxA, MinB, MaxB)
-	return (1 - ((Value - MinA) / (MaxA - MinA))) * MinB + ((Value - MinA) / (MaxA - MinA)) * MaxB;
+    if MaxA == MinA then return MinB end
+    return (1 - ((Value - MinA) / (MaxA - MinA))) * MinB + ((Value - MinA) / (MaxA - MinA)) * MaxB
 end;
 
 function Library:GetTextBounds(Text, Font, Size, Resolution)
@@ -892,24 +893,16 @@ do
 			Name = 'Color';
 			BackgroundColor3 = Color3.new(1, 1, 1);
 			BorderColor3 = Color3.new(0, 0, 0);
-			Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);			Size = UDim2.fromOffset(230, Info.Transparency and 271 or 253);
+			Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18),
+			Size = UDim2.fromOffset(230, Info.Transparency and 271 or 253);
 			Visible = false;
 			ZIndex = 15;
 			Parent = ScreenGui,
 		});
 
-		local function _updatePickerPos()
-    local x = DisplayFrame.AbsolutePosition.X
-    local y = DisplayFrame.AbsolutePosition.Y + 18
-    local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
-    local w = PickerFrameOuter.AbsoluteSize.X
-    local h = PickerFrameOuter.AbsoluteSize.Y
-    PickerFrameOuter.Position = UDim2.fromOffset(
-        math.clamp(x, 0, math.max(0, vp.X - w)),
-        math.clamp(y, 0, math.max(0, vp.Y - h))
-    )
-end
-DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(_updatePickerPos)
+		DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
+			PickerFrameOuter.Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);
+		end)
 
 		local PickerFrameInner = Library:Create('Frame', {
 			BackgroundColor3 = Library.BackgroundColor;
@@ -2921,12 +2914,12 @@ Library:AddToRegistry(SliderInner, {
 
 -- Dynamically recalculate MaxSize so fill always reaches the far edge correctly
 local function _UpdateSliderMax()
-	local w = SliderInner.AbsoluteSize.X;
-	if w > 0 then
-		Slider.MaxSize = w;
-		Slider:Display();
-	end;
-end;
+	local w = SliderInner.AbsoluteSize.X
+	if w > 0 and Slider.Max > Slider.Min then
+		Slider.MaxSize = w
+		Slider:Display()
+	end
+end
 SliderInner:GetPropertyChangedSignal('AbsoluteSize'):Connect(_UpdateSliderMax);
 task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 
@@ -2997,8 +2990,9 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 				DisplayLabel.Text = string.format('%s/%s', Slider.Value .. Suffix, Slider.Max .. Suffix);
 			end
 
-			local X = math.ceil(Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, Slider.MaxSize));
-			Fill.Size = UDim2.new(0, X, 1, 0);
+			if Slider.MaxSize <= 0 or Slider.Min >= Slider.Max then return end
+			local X = math.ceil(Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, Slider.MaxSize))
+			Fill.Size = UDim2.new(0, math.max(0, X), 1, 0)
 
 			HideBorderRight.Visible = not (X == Slider.MaxSize or X == 0);
 
@@ -3221,20 +3215,14 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 		});
 
 		local function RecalculateListPosition()
-    local x = DropdownOuter.AbsolutePosition.X
-    local y = DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1
-    local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
-    local w = ListOuter.AbsoluteSize.X
-    local h = ListOuter.AbsoluteSize.Y
-    ListOuter.Position = UDim2.fromOffset(
-        math.clamp(x, 0, math.max(0, vp.X - w)),
-        math.clamp(y, 0, math.max(0, vp.Y - h))
-    )
+    if DropdownOuter.AbsoluteSize.X <= 0 then return end
+    ListOuter.Position = UDim2.fromOffset(DropdownOuter.AbsolutePosition.X, DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1);
 end;
 
 		local function RecalculateListSize(YSize)
-			ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, YSize or (MAX_DROPDOWN_ITEMS * 20 + 2))
-		end;
+    if DropdownOuter.AbsoluteSize.X <= 0 then return end
+    ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, YSize or (MAX_DROPDOWN_ITEMS * 20 + 2))
+end;
 
 		RecalculateListPosition();
 		RecalculateListSize();
@@ -5971,8 +5959,7 @@ TabButton.MouseEnter:Connect(function()
 		end);
 
 		TabButton.TouchTap:Connect(function()
-			Library:PlayClickSound();
-			Tab:ShowTab();
+    		-- handled by InputBegan bc pealz has 2 of same??
 		end);
 
 		local TabFrame = Library:Create('ScrollingFrame', {
@@ -6036,9 +6023,11 @@ TabButton.MouseEnter:Connect(function()
 		local tabActiveTween = Library._TI_TabActive;
 
 		function Tab:ShowTab()
-			for _, Tab in next, Window.Tabs do
-				Tab:HideTab();
-			end;
+    for _, OtherTab in next, Window.Tabs do
+        if OtherTab ~= Tab then
+            OtherTab:HideTab();
+        end;
+    end;
 
 			TweenService:Create(Blocker, tabActiveTween, {
 				BackgroundTransparency = 0;
