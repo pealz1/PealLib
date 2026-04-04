@@ -892,16 +892,24 @@ do
 			Name = 'Color';
 			BackgroundColor3 = Color3.new(1, 1, 1);
 			BorderColor3 = Color3.new(0, 0, 0);
-			Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18),
-			Size = UDim2.fromOffset(230, Info.Transparency and 271 or 253);
+			Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);			Size = UDim2.fromOffset(230, Info.Transparency and 271 or 253);
 			Visible = false;
 			ZIndex = 15;
 			Parent = ScreenGui,
 		});
 
-		DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
-			PickerFrameOuter.Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);
-		end)
+		local function _updatePickerPos()
+    local x = DisplayFrame.AbsolutePosition.X
+    local y = DisplayFrame.AbsolutePosition.Y + 18
+    local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+    local w = PickerFrameOuter.AbsoluteSize.X
+    local h = PickerFrameOuter.AbsoluteSize.Y
+    PickerFrameOuter.Position = UDim2.fromOffset(
+        math.clamp(x, 0, math.max(0, vp.X - w)),
+        math.clamp(y, 0, math.max(0, vp.Y - h))
+    )
+end
+DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(_updatePickerPos)
 
 		local PickerFrameInner = Library:Create('Frame', {
 			BackgroundColor3 = Library.BackgroundColor;
@@ -3213,8 +3221,16 @@ task.spawn(function() task.wait(); _UpdateSliderMax(); end);
 		});
 
 		local function RecalculateListPosition()
-			ListOuter.Position = UDim2.fromOffset(DropdownOuter.AbsolutePosition.X, DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1);
-		end;
+    local x = DropdownOuter.AbsolutePosition.X
+    local y = DropdownOuter.AbsolutePosition.Y + DropdownOuter.Size.Y.Offset + 1
+    local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+    local w = ListOuter.AbsoluteSize.X
+    local h = ListOuter.AbsoluteSize.Y
+    ListOuter.Position = UDim2.fromOffset(
+        math.clamp(x, 0, math.max(0, vp.X - w)),
+        math.clamp(y, 0, math.max(0, vp.Y - h))
+    )
+end;
 
 		local function RecalculateListSize(YSize)
 			ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, YSize or (MAX_DROPDOWN_ITEMS * 20 + 2))
