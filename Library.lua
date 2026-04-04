@@ -4767,31 +4767,23 @@ function Library:CreateHomeTab(Window, Info)
 	});
 
 	-- Replicate the two-column layout identical to a normal AddTab
-	local LeftSide = Library:Create('ScrollingFrame', {
-		BackgroundTransparency = 1;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0, 4, 0, 4);
-		Size = UDim2.new(0.5, -6, 1, -8);
-		CanvasSize = UDim2.new(0, 0, 0, 0);
-		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		ScrollBarThickness = 0;
-		ScrollingDirection = Enum.ScrollingDirection.Y;
-		ZIndex = 2;
-		Parent = HomeFrame;
-	});
+	local LeftSide = Library:Create('Frame', {
+    BackgroundTransparency = 1;
+    BorderSizePixel = 0;
+    Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
+    Size = UDim2.new(0.5, -12 + 2, 1, -16);
+    ZIndex = 2;
+    Parent = TabFrame;
+});
 
-	local RightSide = Library:Create('ScrollingFrame', {
-		BackgroundTransparency = 1;
-		BorderSizePixel = 0;
-		Position = UDim2.new(0.5, 2, 0, 4);
-		Size = UDim2.new(0.5, -6, 1, -8);
-		CanvasSize = UDim2.new(0, 0, 0, 0);
-		AutomaticCanvasSize = Enum.AutomaticSize.Y;
-		ScrollBarThickness = 0;
-		ScrollingDirection = Enum.ScrollingDirection.Y;
-		ZIndex = 2;
-		Parent = HomeFrame;
-	});
+local RightSide = Library:Create('Frame', {
+    BackgroundTransparency = 1;
+    BorderSizePixel = 0;
+    Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
+    Size = UDim2.new(0.5, -12 + 2, 1, -16);
+    ZIndex = 2;
+    Parent = TabFrame;
+});
 
 	Library:Create('UIListLayout', {
 		Padding = UDim.new(0, 8);
@@ -4810,13 +4802,9 @@ function Library:CreateHomeTab(Window, Info)
 	});
 
 	for _, Side in next, { LeftSide, RightSide } do
-		local function _resizeCol(col)
-			local ll = col:FindFirstChildWhichIsA('UIListLayout')
-			if ll then
-				col.CanvasSize = UDim2.new(0, 0, 0, ll.AbsoluteContentSize.Y + 8)
-			end
-		end
-		Side:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(Side) end)
+		Side:WaitForChild('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			Side.CanvasSize = UDim2.fromOffset(0, Side.UIListLayout.AbsoluteContentSize.Y);
+		end);
 	end;
 
 	-- ── Minimal HomeTab object with AddGroupbox / AddLeftGroupbox / AddRightGroupbox
@@ -4828,8 +4816,7 @@ function Library:CreateHomeTab(Window, Info)
 		local BoxOuter = Library:Create('Frame', {
 			BackgroundColor3 = Library.OutlineColor;
 			BorderSizePixel  = 0;
-			Size             = UDim2.new(1, 0, 0, 0);
-			AutomaticSize    = Enum.AutomaticSize.Y;
+			Size             = UDim2.new(1, 0, 0, 507 + 2);
 			ZIndex           = 2;
 			Parent           = gInfo.Side == 1 and LeftSide or RightSide;
 		});
@@ -4881,6 +4868,19 @@ function Library:CreateHomeTab(Window, Info)
 			SortOrder     = Enum.SortOrder.LayoutOrder;
 			Parent        = Container;
 		});
+
+function Groupbox:Resize()
+    local layout = Container:FindFirstChildWhichIsA('UIListLayout')
+    local h = layout and layout.AbsoluteContentSize.Y or 0
+    BoxOuter.Size = UDim2.new(1, 0, 0, 20 + h + 6)
+end;
+
+local _homeLayout = Container:FindFirstChildWhichIsA('UIListLayout')
+if _homeLayout then
+    _homeLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+        Groupbox:Resize()
+    end)
+end
 
 		Groupbox.Container = Container;
 		setmetatable(Groupbox, BaseGroupbox);
@@ -5971,28 +5971,20 @@ TabButton.MouseEnter:Connect(function()
 			Parent = TabContainer;
 		});
 
-		local LeftSide = Library:Create('ScrollingFrame', {
+		local LeftSide = Library:Create('Frame', {
 			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
-			Position = UDim2.new(0, 4, 0, 4);
-			Size = UDim2.new(0.5, -6, 1, -8);
-			CanvasSize = UDim2.new(0, 0, 0, 0);
-			AutomaticCanvasSize = Enum.AutomaticSize.Y;
-			ScrollBarThickness = 0;
-			ScrollingDirection = Enum.ScrollingDirection.Y;
+			Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
+			Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
 
-		local RightSide = Library:Create('ScrollingFrame', {
+		local RightSide = Library:Create('Frame', {
 			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
-			Position = UDim2.new(0.5, 2, 0, 4);
-			Size = UDim2.new(0.5, -6, 1, -8);
-			CanvasSize = UDim2.new(0, 0, 0, 0);
-			AutomaticCanvasSize = Enum.AutomaticSize.Y;
-			ScrollBarThickness = 0;
-			ScrollingDirection = Enum.ScrollingDirection.Y;
+			Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
+			Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
@@ -6017,9 +6009,7 @@ TabButton.MouseEnter:Connect(function()
 		do
 			local function _resizeCol(col)
 				local ll = col:FindFirstChildWhichIsA('UIListLayout')
-				if ll then
-					col.CanvasSize = UDim2.new(0, 0, 0, ll.AbsoluteContentSize.Y + 8)
-				end
+				if ll then col.Size = UDim2.new(0.5, -12 + 2, 0, ll.AbsoluteContentSize.Y + 16) end
 			end
 			LeftSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(LeftSide) end)
 			RightSide:FindFirstChildWhichIsA('UIListLayout'):GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function() _resizeCol(RightSide) end)
