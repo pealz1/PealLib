@@ -269,7 +269,7 @@ do
 		local _tipIndex   = 1;
 		local _lastDot    = tick();
 		local _lastTip    = tick();
-		local _endTime    = tick() + 7;
+		local _endTime    = tick() + 3;
 
 		while tick() < _endTime do
 			task.wait();
@@ -281,7 +281,7 @@ do
 				_LoadText.Text = 'Loading' .. string.rep('.', _dotCount);
 			end;
 
-			if now - _lastTip >= 2.8 then
+			if now - _lastTip >= 1.4 then
 				_lastTip  = now;
 				_tipIndex = (_tipIndex % #_tipsList) + 1;
 				TweenService:Create(_TipLabel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play();
@@ -295,10 +295,10 @@ do
 		_bgGradConn:Disconnect();
 
 		-- Fade out (transparent → black), then destroy
-		TweenService:Create(_FadeOverlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		TweenService:Create(_FadeOverlay, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			BackgroundTransparency = 0;
 		}):Play();
-		task.wait(0.55);
+		task.wait(0.4);
 		_LoadGui:Destroy();
 	end);
 end;
