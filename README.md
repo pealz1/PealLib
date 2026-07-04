@@ -5,8 +5,8 @@
 **A modern, feature-rich UI library for Roblox**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/Robloxv2/PealLib?style=flat&color=yellow)](https://github.com/Robloxv2/PealLib/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/Robloxv2/PealLib?style=flat&color=green)](https://github.com/Robloxv2/PealLib/network)
+[![GitHub Stars](https://img.shields.io/github/stars/pealz1/PealLib?style=flat&color=yellow)](https://github.com/pealz1/PealLib/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/pealz1/PealLib?style=flat&color=green)](https://github.com/pealz1/PealLib/network)
 [![Docs](https://img.shields.io/badge/docs-Robloxv2.github.io%2FPealLib-purple)](https://Robloxv2.github.io/PealLib)
 
 Build professional, fully-featured interfaces with minimal code.
@@ -21,7 +21,7 @@ Inspired by Matcha & Linoria — rebuilt with more power and polish.
 ## Quick Start
 
 ```lua
-local repo = 'https://raw.githubusercontent.com/Robloxv2/PealLib/main/'
+local repo = 'https://raw.githubusercontent.com/pealz1/PealLib/main/'
 
 local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
